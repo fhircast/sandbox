@@ -6,8 +6,8 @@ using System.Web;
 using FHIRcastSandbox.Model;
 
 namespace FHIRcastSandbox.Core {
-    public class CallbackClient {
-        public Task SendCallback(Subscription subscription, SubscriptionBase parameters) {
+    public class SubscriptionCallback {
+        public Uri GetCallbackUri(Subscription subscription, SubscriptionBase parameters) {
             var properties = parameters.GetType().GetProperties()
                 .Where(x => x.GetValue(parameters, null) != null)
                 .Select(x => x.Name + "=" + HttpUtility.UrlEncode(x.GetValue(parameters, null).ToString()));
@@ -17,8 +17,7 @@ namespace FHIRcastSandbox.Core {
             var newUri = new UriBuilder(subscription.Callback);
             newUri.Query += addedParamteres;
 
-            var client = new HttpClient();
-            return client.GetAsync(newUri.Uri);
+            return newUri.Uri;
         }
     }
 }

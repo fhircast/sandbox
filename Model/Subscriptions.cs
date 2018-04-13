@@ -34,7 +34,7 @@ namespace FHIRcastSandbox.Model {
         public string Reason { get; set; }
     }
 
-    public class SubscriptionDenied : SubscriptionWithLease {
+    public class SubscriptionVerification : SubscriptionWithLease {
         public string Challenge { get; set; }
     }
 

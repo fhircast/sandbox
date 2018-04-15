@@ -2,6 +2,7 @@ using FHIRcastSandbox.Model;
 using FHIRcastSandbox.Rules;
 using System.Collections.Immutable;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace FHIRcastSandbox {
     public interface ISubscriptionValidator {
@@ -9,7 +10,7 @@ namespace FHIRcastSandbox {
     }
 
     public interface ISubscriptions {
-        ImmutableList<Subscription> GetActiveSubscriptions();
+        ICollection<Subscription> GetActiveSubscriptions();
         void AddSubscription(Subscription subscription);
         void RemoveSubscription(Subscription subscription);
     }

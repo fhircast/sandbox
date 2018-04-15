@@ -53,11 +53,11 @@ namespace FHIRcastSandbox.Model {
 
     public class SubscriptionComparer : IEqualityComparer<Subscription> {
         public bool Equals(Subscription sub1, Subscription sub2) {
-            return sub1.Callback == sub2.Callback;
+            return sub1.Callback == sub2.Callback && sub1.Topic == sub2.Topic;
         }
 
         public int GetHashCode(Subscription subscription) {
-            return subscription.Callback.GetHashCode();
+            return subscription.Callback.GetHashCode() ^ subscription.Topic.GetHashCode();
         }
     }
 }

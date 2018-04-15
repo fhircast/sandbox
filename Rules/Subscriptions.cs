@@ -1,17 +1,18 @@
 using FHIRcastSandbox.Model;
 using Microsoft.Extensions.Logging;
 using System.Collections.Immutable;
+using System.Collections.Generic;
 
 namespace FHIRcastSandbox.Rules {
     public class Subscriptions : ISubscriptions {
         private readonly ILogger<Subscriptions> logger;
-        private ImmutableList<Subscription> subscriptions = ImmutableList<Subscription>.Empty;
+        private ImmutableHashSet<Subscription> subscriptions = ImmutableHashSet<Subscription>.Empty.WithComparer(Subscription.DefaultComparer);
 
         public Subscriptions(ILogger<Subscriptions> logger) {
             this.logger = logger;
         }
 
-        public ImmutableList<Subscription> GetActiveSubscriptions() {
+        public ICollection<Subscription> GetActiveSubscriptions() {
             return this.subscriptions;
         }
 
@@ -22,7 +23,7 @@ namespace FHIRcastSandbox.Rules {
 
         public void RemoveSubscription(Subscription subscription) {
             this.logger.LogInformation($"Removing subscription {subscription}.");
-            this.subscriptions = this.subscriptions.Remove(subscription, Subscription.DefaultComparer);
+            this.subscriptions = this.subscriptions.Remove(subscription);
         }
     }
 }

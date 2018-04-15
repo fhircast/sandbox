@@ -10,7 +10,7 @@ namespace FHIRcastSandbox.Core {
         public Uri GetCallbackUri(Subscription subscription, SubscriptionBase parameters) {
             var properties = parameters.GetType().GetProperties()
                 .Where(x => x.GetValue(parameters, null) != null)
-                .Select(x => x.Name + "=" + HttpUtility.UrlEncode(x.GetValue(parameters, null).ToString()));
+                .Select(x => x.Name?.ToLower() + "=" + HttpUtility.UrlEncode(x.GetValue(parameters, null).ToString()));
 
             var addedParamteres = String.Join("&", properties.ToArray());
 

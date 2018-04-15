@@ -57,14 +57,12 @@ namespace FHIRcastSandbox.Rules {
                     logger.LogInformation($"Callback result for verification request was not equal to challenge. Response body: '{responseBody}', Challenge: '{challenge}'.");
                     return ClientValidationOutcome.NotVerified;
                 }
+
+                return ClientValidationOutcome.Verified;
             }
 
             return ClientValidationOutcome.NotVerified;
         }
-    }
-
-    public interface ISubscriptionValidator {
-        Task<ClientValidationOutcome> ValidateSubscription(Subscription subscription, HubValidationOutcome outcome);
     }
 
     public enum HubValidationOutcome {

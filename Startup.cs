@@ -1,11 +1,11 @@
-﻿using System;
-using FHIRcastSandbox.Rules;
-using Hangfire;
+﻿using FHIRcastSandbox.Rules;
 using Hangfire.MemoryStorage;
+using Hangfire;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System;
 
 namespace FHIRcastSandbox {
     public class Startup {
@@ -22,7 +22,9 @@ namespace FHIRcastSandbox {
                 .UseNLogLogProvider()
                 .UseMemoryStorage());
             services.AddTransient<ISubscriptionValidator, SubscriptionValidator>();
+            services.AddSingleton<ISubscriptions, Subscriptions>();
             services.AddTransient<IBackgroundJobClient, BackgroundJobClient>();
+            services.AddTransient<ValidateSubscriptionJob>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

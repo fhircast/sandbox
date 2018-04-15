@@ -19,18 +19,13 @@ namespace FHIRcastSandbox.Controllers {
 
                 return this.Content(System.IO.File.ReadAllText(Path.Combine(logDir, logFile)));
             } else {
-                return this.Content("No such log file found...");
+                return this.NotFound("No such log file found...");
             }
         }
 
         [HttpGet]
         public IActionResult Get() {
-            var log = "fhircast";
-            var target = LogManager.Configuration.FindTargetByName<FileTarget>(log);
-            var logFile = target.FileName.Render(new LogEventInfo());
-            var logDir = Path.GetDirectoryName(new Uri(Assembly.GetExecutingAssembly().Location).AbsolutePath);
-
-            return this.Content(System.IO.File.ReadAllText(Path.Combine(logDir, logFile)));
+            return this.Get("fhircast");
         }
     }
 }

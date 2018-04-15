@@ -1,10 +1,13 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Newtonsoft.Json;
+using System.Collections.Generic;
+using System;
 
 namespace FHIRcastSandbox.Model {
     public abstract class SubscriptionBase {
+        public static IEqualityComparer<Subscription> DefaultComparer => new SubscriptionComparer();
+
         [BindRequired]
         public Uri Callback { get; set; }
 
@@ -13,6 +16,7 @@ namespace FHIRcastSandbox.Model {
 
         [BindRequired]
         public string Topic { get; set; }
+
         [BindRequired]
         public string[] Events { get; set; }
 
@@ -45,5 +49,15 @@ namespace FHIRcastSandbox.Model {
     public enum SubscriptionMode {
         Subscribe,
         Unsubscribe,
+    }
+
+    public class SubscriptionComparer : IEqualityComparer<Subscription> {
+        public bool Equals(Subscription sub1, Subscription sub2) {
+            return sub1.Callback == sub2.Callback;
+        }
+
+        public int GetHashCode(Subscription subscription) {
+            return subscription.Callback.GetHashCode();
+        }
     }
 }

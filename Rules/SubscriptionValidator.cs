@@ -24,7 +24,7 @@ namespace FHIRcastSandbox.Rules {
 
                 callbackParameters = new SubscriptionCancelled
                 {
-                    Reason = $"The subscription {subscription.GetHashCode()} was canceled for testing purposes.",
+                    Reason = $"The subscription {subscription} was canceled for testing purposes.",
                 };
             } else {
                 logger.LogDebug("Verifying subscription.");

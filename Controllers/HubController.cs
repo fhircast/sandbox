@@ -3,7 +3,6 @@ using FHIRcastSandbox.Rules;
 using Hangfire;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using System.Collections.Generic;
 
 namespace FHIRcastSandbox.Controllers {
@@ -28,7 +27,7 @@ namespace FHIRcastSandbox.Controllers {
         [HttpPost]
         public IActionResult Post([FromForm]Subscription hub, bool _cancel = false) {
             this.logger.LogDebug($"Model valid state is {this.ModelState.IsValid}");
-            this.logger.LogDebug($"Received hub subscription: {JsonConvert.SerializeObject(hub)}");
+            this.logger.LogInformation($"Received hub subscription: {hub}");
 
             if (!this.ModelState.IsValid) {
                 return this.BadRequest(this.ModelState);

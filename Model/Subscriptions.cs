@@ -15,6 +15,10 @@ namespace FHIRcastSandbox.Model {
         public string Topic { get; set; }
         [BindRequired]
         public string[] Events { get; set; }
+
+        public override string ToString() {
+            return JsonConvert.SerializeObject(this);
+        }
     }
 
     public abstract class SubscriptionWithLease : SubscriptionBase {

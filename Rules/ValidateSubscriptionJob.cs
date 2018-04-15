@@ -16,13 +16,17 @@ namespace FHIRcastSandbox.Rules {
         }
 
         public async Task Run(Subscription subscription, bool simulateCancellation) {
-            HubValidationOutcome validationOutcome = simulateCancellation ? HubValidationOutcome.Canceled : HubValidationOutcome.Valid;
-            var validationResult = await this.validator.ValidateSubscription(subscription, validationOutcome);
-            if (validationResult == ClientValidationOutcome.Verified) {
-                this.logger.LogInformation($"Adding verified subscription: {subscription}.");
-                this.subscriptions.AddSubscription(subscription);
-            } else {
-                this.logger.LogInformation($"Not adding unverified subscription: {subscription}.");
+            if (subscription.Mode == SubscriptionMode.Subscribe) {
+                HubValidationOutcome validationOutcome = simulateCancellation ? HubValidationOutcome.Canceled : HubValidationOutcome.Valid;
+                var validationResult = await this.validator.ValidateSubscription(subscription, validationOutcome);
+                if (validationResult == ClientValidationOutcome.Verified) {
+                    this.logger.LogInformation($"Adding verified subscription: {subscription}.");
+                    this.subscriptions.AddSubscription(subscription);
+                } else {
+                    this.logger.LogInformation($"Not adding unverified subscription: {subscription}.");
+                }
+            } else if (subscription.Mode == SubscriptionMode.Unsubscribe) {
+                this.subscriptions.RemoveSubscription(subscription);
             }
         }
     }

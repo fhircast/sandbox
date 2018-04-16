@@ -60,4 +60,16 @@ namespace FHIRcastSandbox.Model {
             return subscription.Callback.GetHashCode() ^ subscription.Topic.GetHashCode();
         }
     }
+
+    public class Notification {
+        public DateTime Timestamp { get; set; }
+        public string Id { get; set; }
+        public NotificationEvent Event { get; }
+    }
+
+    public class NotificationEvent {
+        public string Topic { get; set; }
+        public string Event { get; set; }
+        public object[] Context { get; set; }
+    }
 }

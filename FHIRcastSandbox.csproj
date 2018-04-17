@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <Folder Include="Hubs\" />
+    <Folder Include="Views\Shared\" />
     <Folder Include="wwwroot\" />
     <Folder Include="wwwroot\images\" />
   </ItemGroup>
@@ -26,10 +27,6 @@
 
   <ItemGroup>
     <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="2.0.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="Views\FHIRcastClient\FHIRcastClient.cshtml" />
   </ItemGroup>
 
   <ItemGroup>

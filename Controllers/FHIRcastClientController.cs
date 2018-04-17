@@ -1,29 +1,29 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
 using Microsoft.AspNetCore.Mvc;
-using NLog;
-using NLog.Targets;
 using FHIRcastSandbox.Model;
-using System.Net.Http;
-using System.Threading.Tasks;
 
 namespace FHIRcastSandbox.Controllers {
-    [Route("api/[controller]")]
+    [Route("")]
     public class FHIRcastClientController : Controller {
+
+        private static ClientModel internalModel;
+
         [HttpGet]
-        public IActionResult Get() {
-            return View("View", new ClientModel { PatientIdentifier = ""});
-        }
+        public IActionResult Get() => View("FHIRcastClient", new ClientModel());
 
         [HttpPost]
         public IActionResult Post([FromForm] ClientModel model) {
 
+            internalModel = model;
             RedirectToAction("Hub", "Notify", model);
 
-            return View("View", model);
+            return View("FHIRcastClient", model);
         }
 
+        [Route("subscribe")]
+        [HttpPost]
+        public IActionResult Subscribe(string subscriptionUrl) {
+
+            return View("FHIRcastClient", internalModel);
+        }
     }
 }

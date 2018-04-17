@@ -13,60 +13,72 @@
     <title>View</title>
 </head>
 <body>
-
-    <h4>ClientModel</h4>
-    <hr />
     <div id="root" style="width:50%">
         <fieldset class="UserSessionFieldSet">
             @{
-        using (Html.BeginForm("Post", "FHIRcastClient", FormMethod.Post)) {
 
+        using (Html.BeginForm("Subscribe", "FHIRcastClient", FormMethod.Post)) {
+            <label>Hub url</label>
+            <br />
             <div>
-                <label>User Identifier</label>
-                <br />
-                @Html.TextBoxFor(m => m.UserIdentifier)
-            </div>
-            <div>
-                <label>Patient Identifier</label>
-                <br />
-                @Html.TextBoxFor(m => m.PatientIdentifier)
-            </div>
-            <div>
-                <label>Patient Id Issuer</label>
-                <br />
-                @Html.TextBoxFor(m => m.PatientIdIssuer)
-            </div>
-            <div>
-                <label>Accession Number</label>
-                <br />
-                @Html.TextBoxFor(m => m.AccessionNumber)
-            </div>
-            <div>
-                <label>Accession Number Group</label>
-                <br />
-                @Html.TextBoxFor(m => m.AccessionNumberGroup)
-            </div>
-            <div>
-                <label>Study Id</label>
-                <br />
-                @Html.TextBoxFor(m => m.StudyId)
-            </div>
-            <div>
-                <label>Topic</label>
-                <br />
-                @Html.TextBoxFor(m => m.Topic)
-            </div>
-            <div>
-                <label>Event</label>
-                <br />
-                @Html.TextBoxFor(m => m.Event)
+                <input type="text" name="subscriptionUrl" id="subscriptionUrl" />
             </div>
             <div class="form-group">
-                <input type="submit" value="Save" />
+                <input type="submit" value="Subscribe" />
             </div>
 }
             }
         </fieldset>
+            <fieldset class="UserSessionFieldSet">
+                @{
+                using (Html.BeginForm("Post", "FHIRcastClient", FormMethod.Post)) {
+
+                    <div>
+                        <label>User Identifier</label>
+                        <br />
+                        @Html.TextBoxFor(m => m.UserIdentifier)
+                    </div>
+                    <div>
+                        <label>Patient Identifier</label>
+                        <br />
+                        @Html.TextBoxFor(m => m.PatientIdentifier)
+                    </div>
+                    <div>
+                        <label>Patient Id Issuer</label>
+                        <br />
+                        @Html.TextBoxFor(m => m.PatientIdIssuer)
+                    </div>
+                    <div>
+                        <label>Accession Number</label>
+                        <br />
+                        @Html.TextBoxFor(m => m.AccessionNumber)
+                    </div>
+                    <div>
+                        <label>Accession Number Group</label>
+                        <br />
+                        @Html.TextBoxFor(m => m.AccessionNumberGroup)
+                    </div>
+                    <div>
+                        <label>Study Id</label>
+                        <br />
+                        @Html.TextBoxFor(m => m.StudyId)
+                    </div>
+                    <div>
+                        <label>Topic</label>
+                        <br />
+                        @Html.TextBoxFor(m => m.Topic)
+                    </div>
+                    <div>
+                        <label>Event</label>
+                        <br />
+                        @Html.TextBoxFor(m => m.Event)
+                    </div>
+                    <div class="form-group">
+                        <input type="submit" value="Update" />
+                    </div>
+            }
+                }
+            </fieldset>
     </div>
 
 </body>

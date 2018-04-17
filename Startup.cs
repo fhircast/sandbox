@@ -23,6 +23,7 @@ namespace FHIRcastSandbox {
                 .UseMemoryStorage());
             services.AddTransient<ISubscriptionValidator, SubscriptionValidator>();
             services.AddSingleton<ISubscriptions, Subscriptions>();
+            services.AddSingleton<INotifications, Notifications>();
             services.AddTransient<IBackgroundJobClient, BackgroundJobClient>();
             services.AddTransient<ValidateSubscriptionJob>();
         }

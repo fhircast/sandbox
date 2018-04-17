@@ -2,6 +2,7 @@ using FHIRcastSandbox.Model;
 using Microsoft.Extensions.Logging;
 using System.Collections.Immutable;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace FHIRcastSandbox.Rules {
     public class Subscriptions : ISubscriptions {
@@ -14,6 +15,14 @@ namespace FHIRcastSandbox.Rules {
 
         public ICollection<Subscription> GetActiveSubscriptions() {
             return this.subscriptions;
+        }
+
+        public ICollection<Subscription> GetSubscriptions(string topic, string notificationEvent) {
+            this.logger.LogDebug($"Finding subscriptions for topic: {topic} and event: {notificationEvent}");
+            return this.subscriptions
+                .Where(x => x.Topic == topic)
+                .Where(x => x.Events.Contains(notificationEvent))
+                .ToArray();
         }
 
         public void AddSubscription(Subscription subscription) {

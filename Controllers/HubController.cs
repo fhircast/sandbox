@@ -4,6 +4,8 @@ using Hangfire;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using System;
 
 namespace FHIRcastSandbox.Controllers {
     [Route("api/[controller]")]
@@ -11,11 +13,13 @@ namespace FHIRcastSandbox.Controllers {
         private readonly ILogger<HubController> logger;
         private readonly IBackgroundJobClient backgroundJobClient;
         private readonly ISubscriptions subscriptions;
+        private readonly INotifications notifications;
 
-        public HubController(ILogger<HubController> logger, IBackgroundJobClient backgroundJobClient, ISubscriptions subscriptions) {
+        public HubController(ILogger<HubController> logger, IBackgroundJobClient backgroundJobClient, ISubscriptions subscriptions, INotifications notifications) {
             this.backgroundJobClient = backgroundJobClient;
             this.logger = logger;
             this.subscriptions = subscriptions;
+            this.notifications = notifications;
         }
 
         /// <summary>
@@ -45,6 +49,36 @@ namespace FHIRcastSandbox.Controllers {
         [HttpGet]
         public IEnumerable<Subscription> GetSubscriptions() {
             return this.subscriptions.GetActiveSubscriptions();
+        }
+
+        [Route("notify")]
+        [HttpPost]
+        public async Task<IActionResult> Notify([FromBody] ClientModel clientEvent) {
+            this.logger.LogInformation($"Got notification from client: {clientEvent}");
+
+            var subscriptions = this.subscriptions.GetSubscriptions(clientEvent.Topic, clientEvent.Event);
+            this.logger.LogDebug($"Found {subscriptions.Count} subscriptions matching client event");
+
+            var notification = new Notification {
+                Timestamp = DateTime.UtcNow,
+                Id = Guid.NewGuid().ToString("n"),
+            };
+            notification.Event.Topic = clientEvent.Topic;
+            notification.Event.Event = clientEvent.Event;
+            notification.Event.Context = new object[] {
+                clientEvent.UserIdentifier,
+                clientEvent.PatientIdentifier,
+                clientEvent.PatientIdIssuer,
+                clientEvent.AccessionNumber,
+                clientEvent.AccessionNumberGroup,
+                clientEvent.StudyId,
+            };
+
+            foreach (var sub in subscriptions) {
+                await this.notifications.SendNotification(notification, sub);
+            }
+
+            return this.Ok();
         }
     }
 }

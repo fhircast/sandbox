@@ -1,11 +1,9 @@
 ﻿using System;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Newtonsoft.Json;
 
 namespace FHIRcastSandbox.Model {
-    public class ClientModel {
-        
+    public class ClientModel : ModelBase {
         public string UserIdentifier { get; set; }
         public string PatientIdentifier { get; set; }
         public string PatientIdIssuer { get; set; }
@@ -14,7 +12,5 @@ namespace FHIRcastSandbox.Model {
         public string StudyId { get; set; }
         public string Event { get; set; }
         public string Topic { get; set; }
-
     }
-
 }

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System;
 
 namespace FHIRcastSandbox.Model {
-    public abstract class SubscriptionBase {
+    public abstract class SubscriptionBase : ModelBase {
         public static IEqualityComparer<Subscription> DefaultComparer => new SubscriptionComparer();
 
         [BindRequired]
@@ -19,10 +19,6 @@ namespace FHIRcastSandbox.Model {
 
         [BindRequired]
         public string[] Events { get; set; }
-
-        public override string ToString() {
-            return JsonConvert.SerializeObject(this);
-        }
     }
 
     public abstract class SubscriptionWithLease : SubscriptionBase {
@@ -61,10 +57,10 @@ namespace FHIRcastSandbox.Model {
         }
     }
 
-    public class Notification {
+    public class Notification : ModelBase {
         public DateTime Timestamp { get; set; }
         public string Id { get; set; }
-        public NotificationEvent Event { get; }
+        public NotificationEvent Event { get; } = new NotificationEvent();
     }
 
     public class NotificationEvent {

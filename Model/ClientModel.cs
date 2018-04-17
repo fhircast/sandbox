@@ -12,6 +12,8 @@ namespace FHIRcastSandbox.Model {
         public string AccessionNumber { get; set; }
         public string AccessionNumberGroup { get; set; }
         public string StudyId { get; set; }
+        public string Event { get; set; }
+        public string Topic { get; set; }
 
     }
 

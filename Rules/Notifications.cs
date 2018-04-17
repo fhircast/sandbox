@@ -1,8 +1,9 @@
 using FHIRcastSandbox.Model;
+using Microsoft.Extensions.Logging;
+using System.Net.Http.Headers;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System;
-using Microsoft.Extensions.Logging;
 
 namespace FHIRcastSandbox.Rules {
     public class Notifications : INotifications {
@@ -17,8 +18,11 @@ namespace FHIRcastSandbox.Rules {
 
             var str = Newtonsoft.Json.JsonConvert.SerializeObject(notification);
             var content = new StringContent(str);
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
             var client = new HttpClient();
-            var result = await client.PostAsync(subscription.Callback, content);
+            var response = await client.PostAsync(subscription.Callback, content);
+
+            this.logger.LogDebug($"Got response from posting notification:{Environment.NewLine}{response}{Environment.NewLine}{await response.Content.ReadAsStringAsync()}.");
         }
     }
 }

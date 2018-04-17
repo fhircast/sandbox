@@ -9,5 +9,10 @@ namespace FHIRcastSandbox.Controllers {
         public IActionResult Get([FromQuery] SubscriptionVerification verification) {
             return this.Content(verification.Challenge);
         }
+
+        [HttpPost]
+        public IActionResult Post([FromBody] Notification notification) {
+            return this.Ok(notification);
+        }
     }
 }

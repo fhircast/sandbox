@@ -1,0 +1,74 @@
+﻿
+
+.SignalRInput {
+    color: navy;
+    margin-left: 5px;
+    width : 300px
+}
+
+.SignalR {
+    font-family:Arial;
+    font-size:smaller;
+}
+
+.SignalRConnected {
+    background-color:lightgreen;
+}
+
+.SignalRNotConnected {
+    background-color: indianred;
+}
+
+.UserSessionFieldSet { 
+    background-color: #0d549e;
+    color:white;
+    font-family:Arial;
+    font-size:large;
+    display: inline-block;
+    margin-left: 2px;
+    margin-right: 20px;
+    padding-top: 0.35em;
+    padding-bottom: 0.625em;
+    padding-left: 0.75em;
+    padding-right: 0.75em;
+    border: 2px groove;
+    width: auto
+}
+
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+    .tooltip .tooltiptext {
+        visibility: hidden;
+        width: 180px;
+        background-color: #555;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px 0;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -60px;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+.tooltip .tooltiptext::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #555 transparent transparent transparent;
+}
+
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}

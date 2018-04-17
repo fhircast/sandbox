@@ -1,5 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using FHIRcastSandbox.Model;
+using System.Net.Http;
+using System;
+using Newtonsoft.Json;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
+using System.Security.Cryptography;
 
 namespace FHIRcastSandbox.Controllers {
     [Route("")]
@@ -21,7 +28,31 @@ namespace FHIRcastSandbox.Controllers {
 
         [Route("subscribe")]
         [HttpPost]
-        public IActionResult Subscribe(string subscriptionUrl) {
+        public async Task<IActionResult> Subscribe(string subscriptionUrl, string topic, string events) {
+
+            var rngCsp = new RNGCryptoServiceProvider();
+            var buffer = new byte[100];
+            rngCsp.GetBytes(buffer);
+            var secret = Encoding.UTF8.GetString(buffer, 0, buffer.Length);
+            var httpClient = new HttpClient();
+            var data = new Subscription() {
+                Callback = new Uri(this.Request.Scheme + "://" + this.Request.Host + "/api/echo"),
+                Events = events.Split(";", StringSplitOptions.RemoveEmptyEntries),
+                Mode = SubscriptionMode.Subscribe,
+                Secret = secret,
+                LeaseSeconds = 3600,
+                Topic = topic
+            };
+            var result = await httpClient.PostAsync(subscriptionUrl, 
+                new StringContent(
+                    $"hub.callback={data.Callback}" +
+                    $"&hub.mode={data.Mode}" +
+                    $"&hub.topic={data.Topic}" +
+                    $"&hub.secret={data.Secret}" +
+                    $"&hub.events={string.Join(",", data.Events)}" +
+                    $"&hub.lease_seconds={data.LeaseSeconds}",
+                    Encoding.UTF8, 
+                    "application/x-www-form-urlencoded"));
 
             return View("FHIRcastClient", internalModel);
         }

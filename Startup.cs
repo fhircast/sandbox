@@ -36,6 +36,7 @@ namespace FHIRcastSandbox {
 
             app.UseMvc();
             app.UseHangfireServer();
+            app.UseStaticFiles();
 
             JobActivator.Current = new ServiceProviderJobActivator(app.ApplicationServices);
         }

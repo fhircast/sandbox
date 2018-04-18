@@ -1,9 +1,9 @@
-using System;
-using System.Net.Http;
-using System.Threading.Tasks;
 using FHIRcastSandbox.Core;
 using FHIRcastSandbox.Model;
 using Microsoft.Extensions.Logging;
+using System.Net.Http;
+using System.Threading.Tasks;
+using System;
 
 namespace FHIRcastSandbox.Rules {
     public class SubscriptionValidator : ISubscriptionValidator {

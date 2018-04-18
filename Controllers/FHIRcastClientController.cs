@@ -1,12 +1,12 @@
-using Microsoft.AspNetCore.Mvc;
 using FHIRcastSandbox.Model;
-using System.Net.Http;
-using System;
+using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using System.Net.Http;
+using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using System.Security.Cryptography;
+using System;
 
 namespace FHIRcastSandbox.Controllers {
     [Route("")]

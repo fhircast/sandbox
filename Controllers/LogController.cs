@@ -1,10 +1,10 @@
-using System;
+using Microsoft.AspNetCore.Mvc;
+using NLog.Targets;
+using NLog;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using Microsoft.AspNetCore.Mvc;
-using NLog;
-using NLog.Targets;
+using System;
 
 namespace FHIRcastSandbox.Controllers {
     [Route("api/[controller]")]

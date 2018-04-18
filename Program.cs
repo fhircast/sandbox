@@ -1,7 +1,7 @@
-using Hangfire;
 using Hangfire.MemoryStorage;
-using Microsoft.AspNetCore;
+using Hangfire;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore;
 using NLog.Web;
 
 namespace FHIRcastSandbox {

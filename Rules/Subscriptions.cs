@@ -1,7 +1,7 @@
 using FHIRcastSandbox.Model;
 using Microsoft.Extensions.Logging;
-using System.Collections.Immutable;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 
 namespace FHIRcastSandbox.Rules {

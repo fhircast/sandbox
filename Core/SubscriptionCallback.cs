@@ -1,4 +1,4 @@
-﻿using FHIRcastSandbox.Model;
+using FHIRcastSandbox.Model;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;

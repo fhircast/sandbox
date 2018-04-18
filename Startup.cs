@@ -1,4 +1,4 @@
-﻿using FHIRcastSandbox.Rules;
+using FHIRcastSandbox.Rules;
 using Hangfire.MemoryStorage;
 using Hangfire;
 using Microsoft.AspNetCore.Builder;

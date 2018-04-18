@@ -1,4 +1,4 @@
-﻿using FHIRcastSandbox.Model;
+using FHIRcastSandbox.Model;
 using FHIRcastSandbox.Rules;
 using Hangfire;
 using Microsoft.AspNetCore.Mvc;

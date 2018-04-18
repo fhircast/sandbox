@@ -45,4 +45,4 @@ curl http://localhost:5000/api/hub -d "hub.callback=http://localhost:5000/api/ec
 
 We welcome any contributions to help further enhance this tool for the FHIRcast community! To contribute to this project, please see instructions above for running the application locally and testing the app to make sure the tool works as expected with your incorporated changes. Then follow the steps below.
 
-1. Issue a pull request on the `fhircast/Sandbox` repository with your changes for review. 
+1. Issue a pull request on the `fhircast/sandbox` repository with your changes for review.

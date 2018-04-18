@@ -33,9 +33,9 @@ topic='some_topic'
 curl http://localhost:5000/api/hub -d "hub.callback=http://localhost:5000/api/echo&hub.mode=subscribe&hub.topic=${topic}&hub.events=${events}&hub.secret=very-secret" \
   `# Since the subscription is validated asynchronously, we wait for one second.` \
   && sleep 1 \
-  `# List the subscriptions of teh hub.` \
+  `# List the subscriptions of the hub.` \
   && curl http://localhost:5000/api/hub \
-  `# Notify the hub that something happened using teh non-standard client API of` \
+  `# Notify the hub that something happened using the non-standard client API of` \
   `# the sandbox web client. This will be converted by the hub to a FHIRcast` \
   `# notification and sent to all subscribers that match the topic/event.` \
   && curl -i -d "{ \"topic\": \"${topic}\", \"event\": \"${event}\", \"patientIdentifier\": \"abc123\" }" http://localhost:5000/api/hub/notify -H 'Content-Type:application/json'

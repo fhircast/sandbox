@@ -20,7 +20,8 @@ namespace FHIRcastSandbox.Controllers {
         public IActionResult Post([FromForm] ClientModel model) {
 
             internalModel = model;
-            RedirectToAction("Notify", "Hub", model);
+            var httpClient = new HttpClient();
+            var response = httpClient.PostAsync(this.Request.Scheme + "://" + this.Request.Host + "/api/hub/notify", new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json")).Result;
 
             return View("FHIRcastClient", model);
         }

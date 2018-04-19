@@ -1,7 +1,10 @@
 {
-    "scripts": {
-        "deploy": "now -e NODE_ENV=production --token $NOW_TOKEN --npm",
-        "alias": "now alias --token=$NOW_TOKEN"
-        }
-    }
+  "now": {
+    "name": "fhircast",
+    "alias": "sandbox"
+  },
+  "scripts": {
+    "deploy": "now -e NODE_ENV=production --token $NOW_TOKEN --npm",
+    "alias": "now alias --token=$NOW_TOKEN"
+  }
 }

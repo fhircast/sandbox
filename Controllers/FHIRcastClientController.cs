@@ -20,7 +20,7 @@ namespace FHIRcastSandbox.Controllers {
         public IActionResult Post([FromForm] ClientModel model) {
 
             internalModel = model;
-            RedirectToAction("Hub", "Notify", model);
+            RedirectToAction("Notify", "Hub", model);
 
             return View("FHIRcastClient", model);
         }

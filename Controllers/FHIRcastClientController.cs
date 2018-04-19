@@ -9,6 +9,15 @@ using System;
 
 namespace FHIRcastSandbox.Controllers {
     [Route("")]
+    public class HomeController : Controller {
+        public IActionResult Index() {
+            return this.RedirectToActionPermanent(
+                nameof(FHIRcastClientController.Get),
+                nameof(FHIRcastClientController).Replace("Controller", ""));
+        }
+    }
+
+    [Route("client")]
     public class FHIRcastClientController : Controller {
 
         private static ClientModel internalModel;

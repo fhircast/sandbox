@@ -22,9 +22,21 @@ namespace FHIRcastSandbox.Controllers {
 
         private static ClientModel internalModel;
 
+        public static ClientModel pubModel;
+
+        
+
         [HttpGet]
         public IActionResult Get() => View("FHIRcastClient", new ClientModel());
 
+        public IActionResult Refresh()
+        {
+            if (pubModel == null) { pubModel = new ClientModel(); }
+            internalModel = pubModel;
+            return View("FHIRcastClient", pubModel);
+        }
+
+        [Route("post")]
         [HttpPost]
         public IActionResult Post([FromForm] ClientModel model) {
 

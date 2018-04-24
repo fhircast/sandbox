@@ -40,10 +40,10 @@
 }
             }
         </fieldset>
-            <fieldset class="UserSessionFieldSet">
-                @{
-                using (Html.BeginForm("Post", "FHIRcastClient", FormMethod.Post)) {
-
+        <fieldset class="UserSessionFieldSet">
+            @{
+                using (Html.BeginForm("Post", "FHIRcastClient", FormMethod.Post))
+                {                
                     <div>
                         <label>User Identifier</label>
                         <br />
@@ -87,9 +87,19 @@
                     <div class="form-group">
                         <input type="submit" value="Update" />
                     </div>
-            }
                 }
-            </fieldset>
+            }
+        </fieldset>
+        <fieldset class="UserSessionFieldSet">
+            @{ 
+                using (Html.BeginForm("Refresh", "FHIRcastClient", FormMethod.Post))
+                {
+                    <div class="form-group">
+                        <input type="submit" value="Refresh" />
+                    </div>
+                }
+            }
+        </fieldset>
     </div>
     <script src="~/js/signalr.min.js"></script>
     <script src="~/js/site.js"></script>

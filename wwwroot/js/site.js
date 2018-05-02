@@ -8,6 +8,7 @@ connection.on("ReceiveMessage", (message) => {
 
 connection.start().catch(err => console.error);
 
+<<<<<<< HEAD
 function unsubscribe(subscriptionId) {
     $.ajax({
         type: "POST",
@@ -23,4 +24,8 @@ function unsubscribe(subscriptionId) {
             alert("Error");
         }
     });
+=======
+function deleteRow(rowId) {
+    alert("deleting " + rowId);
+>>>>>>> eb6a56c3119cc39dc48f9759eb57b6554107270d
 }

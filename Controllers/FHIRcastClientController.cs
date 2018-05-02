@@ -74,31 +74,6 @@ namespace FHIRcastSandbox.Controllers {
 
             return View("FHIRcastClient", model);
         }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="subscriptionId"></param>
-        /// <param name="notification"></param>
-        /// <returns></returns>
-        [HttpPost("{subscriptionId}")]
-        public IActionResult Post(string subscriptionId, [FromBody] Notification notification)
-        {
-            //If we do not have an active subscription matching the id then return a notfound error
-            if (!activeSubs.ContainsKey(subscriptionId)) { return NotFound(); }
-
-            FHIRcastClientController.internalModel = new ClientModel()
-            {
-                UserIdentifier = notification.Event.Context[0] == null ? "" : notification.Event.Context[0].ToString(),
-                PatientIdentifier = notification.Event.Context[1] == null ? "" : notification.Event.Context[1].ToString(),
-                PatientIdIssuer = notification.Event.Context[2] == null ? "" : notification.Event.Context[2].ToString(),
-                AccessionNumber = notification.Event.Context[3] == null ? "" : notification.Event.Context[3].ToString(),
-                AccessionNumberGroup = notification.Event.Context[4] == null ? "" : notification.Event.Context[4].ToString(),
-                StudyId = notification.Event.Context[5] == null ? "" : notification.Event.Context[5].ToString(),
-            };
-
-            return this.Ok(notification);
-        } 
         #endregion
 
         #region Subscription events
@@ -132,6 +107,31 @@ namespace FHIRcastSandbox.Controllers {
             {
                 return NotFound();
             }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="subscriptionId"></param>
+        /// <param name="notification"></param>
+        /// <returns></returns>
+        [HttpPost("{subscriptionId}")]
+        public IActionResult Post(string subscriptionId, [FromBody] Notification notification)
+        {
+            //If we do not have an active subscription matching the id then return a notfound error
+            if (!activeSubs.ContainsKey(subscriptionId)) { return NotFound(); }
+
+            FHIRcastClientController.internalModel = new ClientModel()
+            {
+                UserIdentifier = notification.Event.Context[0] == null ? "" : notification.Event.Context[0].ToString(),
+                PatientIdentifier = notification.Event.Context[1] == null ? "" : notification.Event.Context[1].ToString(),
+                PatientIdIssuer = notification.Event.Context[2] == null ? "" : notification.Event.Context[2].ToString(),
+                AccessionNumber = notification.Event.Context[3] == null ? "" : notification.Event.Context[3].ToString(),
+                AccessionNumberGroup = notification.Event.Context[4] == null ? "" : notification.Event.Context[4].ToString(),
+                StudyId = notification.Event.Context[5] == null ? "" : notification.Event.Context[5].ToString(),
+            };
+
+            return this.Ok(notification);
         } 
 
         [Route("subscribe")]

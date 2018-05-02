@@ -32,7 +32,10 @@ namespace FHIRcastSandbox.Controllers {
         [HttpPost]
         public IActionResult Subscribe([FromForm]Subscription hub, bool _cancel = false) {
             this.logger.LogDebug($"Model valid state is {this.ModelState.IsValid}");
+<<<<<<< HEAD
             //Log errors in binding to model
+=======
+>>>>>>> eb6a56c3119cc39dc48f9759eb57b6554107270d
             foreach (var modelProperty in this.ModelState)
             {
                 if (modelProperty.Value.Errors.Count > 0)
@@ -43,8 +46,12 @@ namespace FHIRcastSandbox.Controllers {
                     }
                 }
             }
+<<<<<<< HEAD
 
             hub.LogSubscriptionInfo(this.logger, "received hub subscription");
+=======
+            this.logger.LogInformation($"Received hub subscription: {hub}");
+>>>>>>> eb6a56c3119cc39dc48f9759eb57b6554107270d
 
             if (!this.ModelState.IsValid) {
                 return this.BadRequest(this.ModelState);

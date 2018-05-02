@@ -38,6 +38,7 @@ namespace FHIRcastSandbox.Model {
         public string Secret { get; set; }
         [BindNever, JsonIgnore]
         public string HubURL { get; set; }
+<<<<<<< HEAD
 
         public void LogSubscriptionInfo(ILogger logger, string context)
         {
@@ -51,6 +52,8 @@ namespace FHIRcastSandbox.Model {
                 $"\t UID: {this.UID}"
                 );
         }
+=======
+>>>>>>> eb6a56c3119cc39dc48f9759eb57b6554107270d
     }
 
     public class SubscriptionCancelled : SubscriptionBase {

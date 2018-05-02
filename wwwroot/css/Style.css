@@ -1,4 +1,31 @@
+<<<<<<< HEAD
 ﻿.SignalRInput {
+=======
+﻿.row-relative {
+    position: relative;
+}
+
+.col-border {
+    padding: 0;
+    position: static;
+}
+
+.col-border-padding {
+    padding: 15px;
+}
+
+.col-border:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border: 1px solid red;
+}
+
+
+
+.SignalRInput {
+>>>>>>> eb6a56c3119cc39dc48f9759eb57b6554107270d
     color: navy;
     margin-left: 5px;
     width : 300px
@@ -18,8 +45,13 @@
 }
 
 .SubscriptionFieldSet {
+<<<<<<< HEAD
     background-color: #0d549e;
     color: white;
+=======
+    background-color: khaki;
+    color: brown;
+>>>>>>> eb6a56c3119cc39dc48f9759eb57b6554107270d
     font-family: Arial;
     font-size: large;
     display: inline-block;
@@ -33,10 +65,13 @@
     width: auto
 }
 
+<<<<<<< HEAD
 .SubscriptionTable {
     width: auto;
 }
 
+=======
+>>>>>>> eb6a56c3119cc39dc48f9759eb57b6554107270d
 .UserSessionFieldSet { 
     background-color: #0d549e;
     color:white;

@@ -8,10 +8,7 @@ namespace FHIRcastSandbox.Model {
         public ClientModel()
         {
             ActiveSubscriptions = new List<Subscription>();
-<<<<<<< HEAD
             SubscriptionsToHub = new List<Subscription>();
-=======
->>>>>>> eb6a56c3119cc39dc48f9759eb57b6554107270d
         }
         public string UserIdentifier { get; set; }
         public string PatientIdentifier { get; set; }
@@ -22,9 +19,6 @@ namespace FHIRcastSandbox.Model {
         public string Event { get; set; }
         public string Topic { get; set; }
         public List<Subscription> ActiveSubscriptions { get; set; }
-<<<<<<< HEAD
         public List<Subscription> SubscriptionsToHub { get; set; }
-=======
->>>>>>> eb6a56c3119cc39dc48f9759eb57b6554107270d
     }
 }

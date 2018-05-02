@@ -1,4 +1,25 @@
-﻿
+﻿.row-relative {
+    position: relative;
+}
+
+.col-border {
+    padding: 0;
+    position: static;
+}
+
+.col-border-padding {
+    padding: 15px;
+}
+
+.col-border:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border: 1px solid red;
+}
+
+
 
 .SignalRInput {
     color: navy;
@@ -17,6 +38,22 @@
 
 .SignalRNotConnected {
     background-color: indianred;
+}
+
+.SubscriptionFieldSet {
+    background-color: khaki;
+    color: brown;
+    font-family: Arial;
+    font-size: large;
+    display: inline-block;
+    margin-left: 2px;
+    margin-right: 20px;
+    padding-top: 0.35em;
+    padding-bottom: 0.625em;
+    padding-left: 0.75em;
+    padding-right: 0.75em;
+    border: 2px groove;
+    width: auto
 }
 
 .UserSessionFieldSet { 
@@ -71,4 +108,15 @@
 .tooltip:hover .tooltiptext {
     visibility: visible;
     opacity: 1;
+}
+
+td {
+    border: 1px #DDD solid;
+    padding: 5px;
+    cursor: pointer;
+}
+
+.selected {
+    background-color: brown;
+    color: #FFF;
 }

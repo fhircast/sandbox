@@ -9,6 +9,9 @@ namespace FHIRcastSandbox.Model {
         public static IEqualityComparer<Subscription> DefaultComparer => new SubscriptionComparer();
 
         [BindRequired]
+        public string UID { get; set; }
+
+        [BindRequired]
         public Uri Callback { get; set; }
 
         [BindRequired]
@@ -32,6 +35,8 @@ namespace FHIRcastSandbox.Model {
     public class Subscription : SubscriptionWithLease {
         [BindRequired]
         public string Secret { get; set; }
+        [BindNever, JsonIgnore]
+        public string HubURL { get; set; }
     }
 
     public class SubscriptionCancelled : SubscriptionBase {

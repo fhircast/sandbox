@@ -7,3 +7,7 @@ connection.on("ReceiveMessage", (message) => {
 });
 
 connection.start().catch(err => console.error);
+
+function deleteRow(rowId) {
+    alert("deleting " + rowId);
+}

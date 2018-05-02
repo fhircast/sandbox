@@ -3,10 +3,14 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System;
+using Microsoft.Extensions.Logging;
 
 namespace FHIRcastSandbox.Model {
     public abstract class SubscriptionBase : ModelBase {
         public static IEqualityComparer<Subscription> DefaultComparer => new SubscriptionComparer();
+
+        [BindRequired]
+        public string UID { get; set; }
 
         [BindRequired]
         public Uri Callback { get; set; }
@@ -32,6 +36,21 @@ namespace FHIRcastSandbox.Model {
     public class Subscription : SubscriptionWithLease {
         [BindRequired]
         public string Secret { get; set; }
+        [BindNever, JsonIgnore]
+        public string HubURL { get; set; }
+
+        public void LogSubscriptionInfo(ILogger logger, string context)
+        {
+            logger.LogDebug($"Subscription for {context}: \n" +
+                $"\t Callback: {this.Callback} \n" +
+                $"\t Mode: {this.Mode} \n" +
+                $"\t Topic: {this.Topic} \n" +
+                $"\t Secret: {this.Secret} \n" +
+                $"\t Events: {string.Join(",", this.Events)} \n" +
+                $"\t Lease: {this.LeaseSeconds} \n" +
+                $"\t UID: {this.UID}"
+                );
+        }
     }
 
     public class SubscriptionCancelled : SubscriptionBase {

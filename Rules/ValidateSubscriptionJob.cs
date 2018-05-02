@@ -22,6 +22,7 @@ namespace FHIRcastSandbox.Rules {
                 if (validationResult == ClientValidationOutcome.Verified) {
                     this.logger.LogInformation($"Adding verified subscription: {subscription}.");
                     this.subscriptions.AddSubscription(subscription);
+                    FHIRcastSandbox.Controllers.FHIRcastClientController.internalModel.SubscriptionsToHub.Add(subscription);
                 } else {
                     this.logger.LogInformation($"Not adding unverified subscription: {subscription}.");
                 }

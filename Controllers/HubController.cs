@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace FHIRcastSandbox.Controllers {
     [Route("api/[controller]")]
@@ -31,7 +32,19 @@ namespace FHIRcastSandbox.Controllers {
         [HttpPost]
         public IActionResult Subscribe([FromForm]Subscription hub, bool _cancel = false) {
             this.logger.LogDebug($"Model valid state is {this.ModelState.IsValid}");
-            this.logger.LogInformation($"Received hub subscription: {hub}");
+            //Log errors in binding to model
+            foreach (var modelProperty in this.ModelState)
+            {
+                if (modelProperty.Value.Errors.Count > 0)
+                {
+                    for (int i = 0; i < modelProperty.Value.Errors.Count; i++)
+                    {
+                        this.logger.LogDebug($"Error found for {modelProperty.Key}: {modelProperty.Value.Errors[i].ErrorMessage}");
+                    }
+                }
+            }
+
+            hub.LogSubscriptionInfo(this.logger, "received hub subscription");
 
             if (!this.ModelState.IsValid) {
                 return this.BadRequest(this.ModelState);

@@ -1,6 +1,4 @@
-﻿
-
-.SignalRInput {
+﻿.SignalRInput {
     color: navy;
     margin-left: 5px;
     width : 300px
@@ -17,6 +15,26 @@
 
 .SignalRNotConnected {
     background-color: indianred;
+}
+
+.SubscriptionFieldSet {
+    background-color: #0d549e;
+    color: white;
+    font-family: Arial;
+    font-size: large;
+    display: inline-block;
+    margin-left: 2px;
+    margin-right: 20px;
+    padding-top: 0.35em;
+    padding-bottom: 0.625em;
+    padding-left: 0.75em;
+    padding-right: 0.75em;
+    border: 2px groove;
+    width: auto
+}
+
+.SubscriptionTable {
+    width: auto;
 }
 
 .UserSessionFieldSet { 
@@ -71,4 +89,15 @@
 .tooltip:hover .tooltiptext {
     visibility: visible;
     opacity: 1;
+}
+
+td {
+    border: 1px #DDD solid;
+    padding: 5px;
+    cursor: pointer;
+}
+
+.selected {
+    background-color: brown;
+    color: #FFF;
 }

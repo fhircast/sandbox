@@ -194,7 +194,7 @@ namespace FHIRcastSandbox.Controllers {
             return View("FHIRcastClient", internalModel);
         }
 
-        [Route("unsubscribe/{subscriptionId}")]
+        [Route("Unsubscribe/{subscriptionId}")]
         [HttpPost]
         public async Task<IActionResult> Unsubscribe(string subscriptionId)
         {

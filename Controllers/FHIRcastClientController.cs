@@ -89,9 +89,20 @@ namespace FHIRcastSandbox.Controllers {
         [HttpGet("{subscriptionId}")]
         public IActionResult Get(string subscriptionId)
         {
+            if (!Request.Query.ContainsKey("hub.challenge"))
+            {
+                this.logger.LogDebug($"Missing hub.challenge");
+                return NotFound();
+            }
+
+            if (!Request.Query.ContainsKey("hub.topic"))
+            {
+                this.logger.LogDebug($"Missing hub.topic");
+                return NotFound();
+            }
+
             string challenge = Request.Query["hub.challenge"];
             string topic = Request.Query["hub.topic"];
-
 
             //Received a verification request for non-pending subscription, return a NotFound response
             if (!pendingSubs.ContainsKey(subscriptionId)) { return NotFound(); }

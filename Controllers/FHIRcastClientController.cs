@@ -87,8 +87,23 @@ namespace FHIRcastSandbox.Controllers {
         /// <param name="verification">Hub's verification response to our subscription attempt</param>
         /// <returns></returns>
         [HttpGet("{subscriptionId}")]
-        public IActionResult Get(string subscriptionId, [FromQuery] SubscriptionVerification verification)
+        public IActionResult Get(string subscriptionId)
         {
+            if (!Request.Query.ContainsKey("hub.challenge"))
+            {
+                this.logger.LogDebug($"Missing hub.challenge");
+                return NotFound();
+            }
+
+            if (!Request.Query.ContainsKey("hub.topic"))
+            {
+                this.logger.LogDebug($"Missing hub.topic");
+                return NotFound();
+            }
+
+            string challenge = Request.Query["hub.challenge"];
+            string topic = Request.Query["hub.topic"];
+
             //Received a verification request for non-pending subscription, return a NotFound response
             if (!pendingSubs.ContainsKey(subscriptionId)) { return NotFound(); }
 
@@ -96,12 +111,12 @@ namespace FHIRcastSandbox.Controllers {
 
             //Validate verification subcription with our subscription. If a match return challenge
             //otherwise return NotFound response.
-            if (SubsEqual(sub, verification))
+            if (topic == sub.Topic)
             {
                 //Move subscription to active sub collection and remove from pending subs
                 activeSubs.Add(subscriptionId, sub);
                 pendingSubs.Remove(subscriptionId);
-                return this.Content(verification.Challenge);
+                return this.Content(challenge);
             }
             else
             {
@@ -148,7 +163,7 @@ namespace FHIRcastSandbox.Controllers {
                 UID = subUID,
                 Callback = new Uri(this.Request.Scheme + "://" + this.Request.Host + "/client/" + subUID),
                 Events = events.Split(";", StringSplitOptions.RemoveEmptyEntries),
-                Mode = SubscriptionMode.Subscribe,
+                Mode = SubscriptionMode.subscribe,
                 Secret = secret,
                 LeaseSeconds = 3600,
                 Topic = topic
@@ -179,14 +194,14 @@ namespace FHIRcastSandbox.Controllers {
             return View("FHIRcastClient", internalModel);
         }
 
-        [Route("unsubscribe/{subscriptionId}")]
+        [Route("Unsubscribe/{subscriptionId}")]
         [HttpPost]
         public async Task<IActionResult> Unsubscribe(string subscriptionId)
         {
             this.logger.LogDebug($"Unsubscribing subscription {subscriptionId}");
             if (!activeSubs.ContainsKey(subscriptionId)) { return View("FHIRcastClient", internalModel); }
             Subscription sub = activeSubs[subscriptionId];
-            sub.Mode = SubscriptionMode.Unsubscribe;
+            sub.Mode = SubscriptionMode.unsubscribe;
 
             var httpClient = new HttpClient();
             var result = await httpClient.PostAsync(sub.HubURL,

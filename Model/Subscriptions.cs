@@ -62,8 +62,8 @@ namespace FHIRcastSandbox.Model {
     }
 
     public enum SubscriptionMode {
-        Subscribe,
-        Unsubscribe,
+        subscribe,
+        unsubscribe,
     }
 
     public class SubscriptionComparer : IEqualityComparer<Subscription> {

@@ -156,7 +156,7 @@ namespace FHIRcastSandbox.Controllers {
             data.HubURL = subscriptionUrl;
             pendingSubs.Add(subUID, data);
 
-            data.LogSubscriptionInfo(this.logger, "subscribing");
+            this.logger.LogDebug($"Subscription for 'subscribing': {Environment.NewLine}{data}");
 
             string content = $"hub.callback={data.Callback}" +
                     $"&hub.mode={data.Mode}" +

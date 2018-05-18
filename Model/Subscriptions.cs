@@ -38,19 +38,6 @@ namespace FHIRcastSandbox.Model {
         public string Secret { get; set; }
         [BindNever, JsonIgnore]
         public string HubURL { get; set; }
-
-        public void LogSubscriptionInfo(ILogger logger, string context)
-        {
-            logger.LogDebug($"Subscription for {context}: \n" +
-                $"\t Callback: {this.Callback} \n" +
-                $"\t Mode: {this.Mode} \n" +
-                $"\t Topic: {this.Topic} \n" +
-                $"\t Secret: {this.Secret} \n" +
-                $"\t Events: {string.Join(",", this.Events)} \n" +
-                $"\t Lease: {this.LeaseSeconds} \n" +
-                $"\t UID: {this.UID}"
-                );
-        }
     }
 
     public class SubscriptionCancelled : SubscriptionBase {

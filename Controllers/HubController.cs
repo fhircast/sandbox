@@ -42,7 +42,8 @@ namespace FHIRcastSandbox.Controllers {
                     }
                 }
             }
-            hub.LogSubscriptionInfo(this.logger, "received hub subscription");
+
+            this.logger.LogDebug($"Subscription for 'received hub subscription': {Environment.NewLine}{hub}");
 
             if (!this.ModelState.IsValid) {
                 return this.BadRequest(this.ModelState);

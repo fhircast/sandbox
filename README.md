@@ -23,23 +23,19 @@ In order to run the webserver locally, run:
 dotnet run
 ```
 
-You can then start issuing HTTP requests to the server. Here's an example using curl that will go through a request-notify workflow:
+You can then start issuing HTTP requests to the server. Here's an example using curl that will create a subscription and cause the Hub to attempt to validate your callback url (as defined in `my_url_encoded_callback`).
 
 ```sh
-events='switch-patient-chart'
 event='switch-patient-chart'
+my_url_encoded_callback='http%3A%2F%2Flocalhost%3A1337'
 topic='some_topic'
-# Make a subscription towards the hub.
-curl http://localhost:5000/api/hub -d "hub.callback=http://localhost:5000/api/echo&hub.mode=subscribe&hub.topic=${topic}&hub.events=${events}&hub.secret=very-secret" \
-  `# Since the subscription is validated asynchronously, we wait for one second.` \
-  && sleep 1 \
-  `# List the subscriptions of the hub.` \
-  && curl http://localhost:5000/api/hub \
-  `# Notify the hub that something happened using the non-standard client API of` \
-  `# the sandbox web client. This will be converted by the hub to a FHIRcast` \
-  `# notification and sent to all subscribers that match the topic/event.` \
-  && curl -i -d "{ \"topic\": \"${topic}\", \"event\": \"${event}\", \"patientIdentifier\": \"abc123\" }" http://localhost:5000/api/hub/notify -H 'Content-Type:application/json'
+
+# Request a subscription on the hub.
+curl -d "hub.callback={my_url_encoded_callback}&hub.mode=subscribe&hub.topic={topic}&hub.secret=secret&hub.events={events}&hub.lease_seconds=3600&hub.uid=untilIssueIsFixed" -X POST http://localhost:5000/api/hub
 ```
+
+#### Tutorial
+See the [in progress Tutorial](https://github.com/fhircast/sandbox/wiki/Tutorial) for a more detailed steps towards a hello world app. [Feedback](https://chat.fhir.org/#narrow/stream/118-FHIRcast) welcome (and needed)!
 
 ## Build and Contribution
 

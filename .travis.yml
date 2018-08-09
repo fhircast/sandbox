@@ -9,4 +9,4 @@ matrix:
       dotnet: 2.1.4
 
 script:
-  - dotnet test FHIRCastSandbox.Tests
+  - dotnet test Tests

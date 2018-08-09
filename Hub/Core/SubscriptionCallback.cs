@@ -29,8 +29,9 @@ namespace FHIRcastSandbox.Core {
             /* if (!string.IsNullOrEmpty(name)) { */
             /*     return name; */
             /* } */
-
-            return property.Name.ToLower();
+            var attr = property.GetCustomAttribute<URLNameOverride>();
+            if (attr == null) { return property.Name.ToLower(); }
+            else { return attr.Value; }
         }
     }
 }

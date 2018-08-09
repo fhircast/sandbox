@@ -16,7 +16,7 @@ namespace FHIRcastSandbox.Rules {
         }
 
         public async Task Run(Subscription subscription, bool simulateCancellation) {
-            if (subscription.Mode == SubscriptionMode.Subscribe) {
+            if (subscription.Mode == SubscriptionMode.subscribe) {
                 HubValidationOutcome validationOutcome = simulateCancellation ? HubValidationOutcome.Canceled : HubValidationOutcome.Valid;
                 var validationResult = await this.validator.ValidateSubscription(subscription, validationOutcome);
                 if (validationResult == ClientValidationOutcome.Verified) {
@@ -25,7 +25,7 @@ namespace FHIRcastSandbox.Rules {
                 } else {
                     this.logger.LogInformation($"Not adding unverified subscription: {subscription}.");
                 }
-            } else if (subscription.Mode == SubscriptionMode.Unsubscribe) {
+            } else if (subscription.Mode == SubscriptionMode.unsubscribe) {
                 this.subscriptions.RemoveSubscription(subscription);
             }
         }

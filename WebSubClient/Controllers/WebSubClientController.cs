@@ -65,7 +65,8 @@ namespace FHIRcastSandbox.Controllers {
 
             internalModel = model;
             var httpClient = new HttpClient();
-            var response = httpClient.PostAsync(this.Request.Scheme + "://" + this.Request.Host + "/api/hub/notify", new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json")).Result;
+            //var response = httpClient.PostAsync(this.Request.Scheme + "://" + this.Request.Host + "/api/hub/notify", new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json")).Result;
+            var response = httpClient.PostAsync(this.Request.Scheme + "://localhost:5000/api/hub/notify", new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json")).Result;
 
             return View("WebSubClient", model);
         }
@@ -139,7 +140,7 @@ namespace FHIRcastSandbox.Controllers {
                 UID = subUID,
                 Callback = new Uri(this.Request.Scheme + "://" + this.Request.Host + "/client/" + subUID),
                 Events = events.Split(";", StringSplitOptions.RemoveEmptyEntries),
-                Mode = SubscriptionMode.Subscribe,
+                Mode = SubscriptionMode.subscribe,
                 Secret = secret,
                 LeaseSeconds = 3600,
                 Topic = topic
@@ -176,7 +177,7 @@ namespace FHIRcastSandbox.Controllers {
             this.logger.LogDebug($"Unsubscribing subscription {subscriptionId}");
             if (!activeSubs.ContainsKey(subscriptionId)) { return View("WebSubClient", internalModel); }
             Subscription sub = activeSubs[subscriptionId];
-            sub.Mode = SubscriptionMode.Unsubscribe;
+            sub.Mode = SubscriptionMode.unsubscribe;
 
             var httpClient = new HttpClient();
             var result = await httpClient.PostAsync(sub.HubURL,

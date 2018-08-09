@@ -16,6 +16,7 @@ namespace FHIRcastSandbox.Model {
         public Uri Callback { get; set; }
 
         [BindRequired]
+        [URLNameOverride("hub.mode")]
         public SubscriptionMode? Mode { get; set; }
 
         [BindRequired]
@@ -45,12 +46,13 @@ namespace FHIRcastSandbox.Model {
     }
 
     public class SubscriptionVerification : SubscriptionWithLease {
+        [URLNameOverride("hub.challenge")]
         public string Challenge { get; set; }
     }
 
     public enum SubscriptionMode {
-        Subscribe,
-        Unsubscribe,
+        subscribe,
+        unsubscribe,
     }
 
     public class SubscriptionComparer : IEqualityComparer<Subscription> {
@@ -64,14 +66,30 @@ namespace FHIRcastSandbox.Model {
     }
 
     public class Notification : ModelBase {
+        [JsonProperty(PropertyName = "timestamp")]
         public DateTime Timestamp { get; set; }
+        [JsonProperty(PropertyName = "id")]
         public string Id { get; set; }
+        [JsonProperty(PropertyName = "event")]
         public NotificationEvent Event { get; } = new NotificationEvent();
     }
 
     public class NotificationEvent {
+        [JsonProperty(PropertyName = "hub.topic")]
         public string Topic { get; set; }
+        [JsonProperty(PropertyName = "hub.event")]
         public string Event { get; set; }
+        [JsonProperty(PropertyName = "context")]
         public object[] Context { get; set; }
+    }
+
+    public class URLNameOverride : Attribute
+    {
+        public URLNameOverride(string value)
+        {
+            this.Value = value;
+        }
+
+        public string Value { get; set; }
     }
 }

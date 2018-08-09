@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "Hub": {
+      "applicationUrl": "http://localhost:5000/",
+      "commandName": "Project",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "launchBrowser": false,
+      "ssl": false
+    }
+  }
+}

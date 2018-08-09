@@ -28,7 +28,7 @@ namespace FHIRcastSandbox.WebSubClient {
 
             app.UseStaticFiles();
             app.UseSignalR(routes => {
-                routes.MapHub<FHIRcastSandbox.Hubs.ClientHub>("/clienthub");
+                routes.MapHub<FHIRcastSandbox.Hubs.WebSubClientHub>("/clienthub");
             });
 
             app.UseMvc(routes => {

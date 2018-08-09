@@ -3,10 +3,10 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 
 namespace FHIRcastSandbox.Hubs {
-    public class ClientHub : Hub {
+    public class WebSubClientHub : Hub {
 
         public string ID { get; set; }
-        public ClientHub()
+        public WebSubClientHub()
         {
             ID = Guid.NewGuid().ToString("n");
         }

@@ -15,18 +15,18 @@ namespace FHIRcastSandbox.Controllers {
     public class HomeController : Controller {
         public IActionResult Index() {
             return this.RedirectToActionPermanent(
-                nameof(FHIRcastClientController.Get),
-                nameof(FHIRcastClientController).Replace("Controller", ""));
+                nameof(WebSubClientController.Get),
+                nameof(WebSubClientController).Replace("Controller", ""));
         }
     }
 
     [Route("client")]
-    public class FHIRcastClientController : Controller {
+    public class WebSubClientController : Controller {
 
-        private readonly ILogger<FHIRcastClientController> logger;
+        private readonly ILogger<WebSubClientController> logger;
 
         #region Constructors
-        public FHIRcastClientController(ILogger<FHIRcastClientController> logger) {
+        public WebSubClientController(ILogger<WebSubClientController> logger) {
             this.logger = logger;
             this.UID = Guid.NewGuid().ToString("n");
         }
@@ -42,7 +42,7 @@ namespace FHIRcastSandbox.Controllers {
         #endregion
 
         [HttpGet]
-        public IActionResult Get() => View("FHIRcastClient", new ClientModel());
+        public IActionResult Get() => View("WebSubClient", new ClientModel());
 
         #region Client Events
         public IActionResult Refresh() {
@@ -50,7 +50,7 @@ namespace FHIRcastSandbox.Controllers {
 
             internalModel.ActiveSubscriptions = activeSubs.Values.ToList();
 
-            return View("FHIRcastClient", internalModel);
+            return View("WebSubClient", internalModel);
         }
 
         /// <summary>
@@ -67,7 +67,7 @@ namespace FHIRcastSandbox.Controllers {
             var httpClient = new HttpClient();
             var response = httpClient.PostAsync(this.Request.Scheme + "://" + this.Request.Host + "/api/hub/notify", new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json")).Result;
 
-            return View("FHIRcastClient", model);
+            return View("WebSubClient", model);
         }
         #endregion
 
@@ -111,7 +111,7 @@ namespace FHIRcastSandbox.Controllers {
             //If we do not have an active subscription matching the id then return a notfound error
             if (!activeSubs.ContainsKey(subscriptionId)) { return NotFound(); }
 
-            FHIRcastClientController.internalModel = new ClientModel()
+            WebSubClientController.internalModel = new ClientModel()
             {
                 UserIdentifier = notification.Event.Context[0] == null ? "" : notification.Event.Context[0].ToString(),
                 PatientIdentifier = notification.Event.Context[1] == null ? "" : notification.Event.Context[1].ToString(),
@@ -167,14 +167,14 @@ namespace FHIRcastSandbox.Controllers {
             var result = await httpClient.PostAsync(subscriptionUrl, httpcontent);
 
             if (internalModel == null) { internalModel = new ClientModel(); }
-            return View("FHIRcastClient", internalModel);
+            return View("WebSubClient", internalModel);
         }
 
         [Route("unsubscribe/{subscriptionId}")]
         [HttpPost]
         public async Task<IActionResult> Unsubscribe(string subscriptionId) {
             this.logger.LogDebug($"Unsubscribing subscription {subscriptionId}");
-            if (!activeSubs.ContainsKey(subscriptionId)) { return View("FHIRcastClient", internalModel); }
+            if (!activeSubs.ContainsKey(subscriptionId)) { return View("WebSubClient", internalModel); }
             Subscription sub = activeSubs[subscriptionId];
             sub.Mode = SubscriptionMode.Unsubscribe;
 
@@ -193,7 +193,7 @@ namespace FHIRcastSandbox.Controllers {
 
             activeSubs.Remove(subscriptionId);
 
-            return View("FHIRcastClient", internalModel);
+            return View("WebSubClient", internalModel);
         }
         #endregion
 

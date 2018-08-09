@@ -2,11 +2,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27130.2003
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FHIRcastSandbox", "FHIRCastSandbox\FHIRcastSandbox.csproj", "{45CEC24F-A1BF-4FDE-89B9-AF028CD16B55}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Hub", "Hub\Hub.csproj", "{45CEC24F-A1BF-4FDE-89B9-AF028CD16B55}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FHIRCastSandbox.Tests", "FHIRCastSandbox.Tests\FHIRCastSandbox.Tests.csproj", "{98C5E62C-3C9A-4133-A9AD-FE92A657946E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebSubClient", "WebSubClient\WebSubClient.csproj", "{30974D35-F3BF-467A-A986-4B6762446EB2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebSubClient", "WebSubClient\WebSubClient.csproj", "{30974D35-F3BF-467A-A986-4B6762446EB2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

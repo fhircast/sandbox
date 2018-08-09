@@ -13,8 +13,8 @@
     <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.1" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\FHIRCastSandbox\FHIRcastSandbox.csproj" />
+  <ItemGroup>
+    <ProjectReference Include="..\Hub\Hub.csproj" />
   </ItemGroup>
 
 </Project>

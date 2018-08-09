@@ -16,7 +16,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Common\Common.csproj" />
     <ProjectReference Include="..\Hub\Hub.csproj" />
+    <ProjectReference Include="..\WebSubClient\WebSubClient.csproj" />
   </ItemGroup>
 
 </Project>

@@ -6,7 +6,7 @@ matrix:
     - os: linux
       dist: trusty
       sudo: required
-      dotnet: 2.1.4
+      dotnet: 2.1.301
 
 script:
-  - dotnet test FHIRCastSandbox.Tests
+  - dotnet test Tests

@@ -1,0 +1,221 @@
+﻿@model FHIRcastSandbox.Model.ClientModel
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <link rel="stylesheet" type="text/css" href="~/css/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" href="~/css/Style.css" />
+    <title>View</title>
+</head>
+<body>
+    <h1 align="center">FHIRcast Sandbox</h1>
+    <div id="root" class="container-fluid" style="background-color:darkgray;">
+        <div class="row">
+            @* Client info column *@
+            <div class="col-8" style="border:1px solid black">
+                <h2 align="center">Client info</h2>
+                @* Title row *@
+                <div class="row">
+                    <div class="col-6"><h3 align="center">Subscription info</h3></div>
+                    <div class="col-6"><h3 align="center">User session info</h3></div>
+                </div>
+                @* Content row *@
+                <div class="row justify-content-md-center">
+                    @* Subscription column *@
+                    <div class="col-6" style="border:1px solid black;">
+                        @* Create new subscriptions form *@
+                        <div class="row">
+                            <div class="col">
+                                <div align="center">
+                                    <fieldset class="SubscriptionFieldSet">
+                                        @{
+                                            using (Html.BeginForm("Subscribe", "WebSubClient", FormMethod.Post))
+                                            {
+                                                <label>Hub url</label>
+                                                <br />
+                                                <div>
+                                                    <input type="text" name="subscriptionUrl" id="subscriptionUrl" class="form-control" />
+                                                </div>
+                                                <label>Topic</label>
+                                                <br />
+                                                <div>
+                                                    <input type="text" name="topic" id="topic" class="form-control" />
+                                                </div>
+                                                <label>Events</label>
+                                                <br />
+                                                <div>
+                                                    <input type="text" name="events" id="events" class="form-control" />
+                                                </div>
+
+                                                <br />
+
+                                                <div class="row">
+                                                    <div class="col"><input type="submit" value="Subscribe" class="btn btn-secondary" /></div>
+                                                </div>
+                                            }
+                                        }
+                                    </fieldset>
+                                </div>
+                            </div>
+                        </div>
+                        @* Table of active subscriptions *@
+                        <div class="row">
+                            <div class="col">
+                                <fieldset class="SubscriptionsTable">
+                                    <table id="clientSubTable" class="table table-striped table-bordered table-dark">
+                                        <thead class="thead-dark">
+                                            <tr><td colspan="4" align="center">Client's Subscriptions</td></tr>
+                                            <tr>
+                                                <td>Hub URL</td>
+                                                <td>Topic</td>
+                                                <td>Events</td>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @if (Model.ActiveSubscriptions != null)
+                                            {
+                                                @foreach (var item in Model.ActiveSubscriptions)
+                                                {
+                                                    <tr>
+                                                        <td>@item.HubURL</td>
+                                                        <td>@item.Topic</td>
+                                                        <td>@String.Join(",", item.Events)</td>
+                                                        <td><button class="btn-primary" id="@item.UID" onclick="unsubscribe(this.id)">Unsubscribe</button></td>
+                                                    </tr>
+                                                }
+                                            }
+                                        </tbody>
+                                    </table>
+                                </fieldset>
+                            </div>
+                        </div>
+                    </div>
+                    @* User session column *@
+                    <div class="col-6" style="border:1px solid black">
+                        <div align="center">
+                            <fieldset class="UserSessionFieldSet">
+                                @{
+                                    using (Html.BeginForm("Post", "WebSubClient", FormMethod.Post))
+                                    {
+                                        <div class="row">
+                                            <div class="col">
+                                                <div class="form-group">
+                                                    <label>User Identifier</label>
+                                                    <br />
+                                                    @Html.TextBoxFor(m => m.UserIdentifier, new { @class = "form-control" })
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Patient Identifier</label>
+                                                    <br />
+                                                    @Html.TextBoxFor(m => m.PatientIdentifier, new { @class = "form-control" })
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Patient Id Issuer</label>
+                                                    <br />
+                                                    @Html.TextBoxFor(m => m.PatientIdIssuer, new { @class = "form-control" })
+                                                </div>
+                                            </div>
+                                            <div class="col">
+                                                <div class="form-group">
+                                                    <label>Accession Number</label>
+                                                    <br />
+                                                    @Html.TextBoxFor(m => m.AccessionNumber, new { @class = "form-control" })
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Accession Number Group</label>
+                                                    <br />
+                                                    @Html.TextBoxFor(m => m.AccessionNumberGroup, new { @class = "form-control" })
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Study Id</label>
+                                                    <br />
+                                                    @Html.TextBoxFor(m => m.StudyId, new { @class = "form-control" })
+                                                </div>
+                                            </div>
+                                        </div>
+
+
+                                        <div class="form-group">
+                                            <label>Topic</label>
+                                            <br />
+                                            @Html.TextBoxFor(m => m.Topic, new { @class = "form-control" })
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Event</label>
+                                            <br />
+                                            @Html.TextBoxFor(m => m.Event, new { @class = "form-control" })
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="submit" value="Update" class="btn btn-secondary" />
+                                        </div>
+                                    }
+                                }
+                            </fieldset>
+                        </div>
+                    </div>
+                </div>
+                @* Miscellaneous row *@
+                <div class="row">
+                    <div class="col-12">
+                        <div align="center">
+                            @{
+                                using (Html.BeginForm("Refresh", "WebSubClient", FormMethod.Post))
+                                {
+                                    <div class="form-group">
+                                        <input type="submit" value="Refresh" class="btn btn-primary" />
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* Hub info column *@
+            <div class="col-4" style="border:1px solid black">
+                <h2 align="center">Hub info</h2>
+                @* Hub subscriptions row *@
+                <div class="row">
+                    <div class="col" style="border:1px solid black">
+                        <fieldset class="SubscriptionsTable">
+                            <table id="subsToHubTable" class="table table-striped table-bordered table-dark">
+                                <thead class="thead-dark">
+                                    <tr><td colspan="4" align="center">Subscriptions to Hub</td></tr>
+                                    <tr>
+                                        <td>Callback URL</td>
+                                        <td>Topic</td>
+                                        <td>Events</td>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (Model.SubscriptionsToHub != null)
+                                    {
+                                        @foreach (var item in Model.SubscriptionsToHub)
+                                        {
+                                            <tr>
+                                                <td>@item.Callback.ToString().Substring(0, item.Callback.ToString().LastIndexOf('/'))/{subscriptionId}</td>
+                                                <td>@item.Topic</td>
+                                                <td>@String.Join(",", item.Events)</td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </fieldset>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="~/js/jquery-3.3.1.min.js"></script>
+    <script src="~/js/signalr.min.js"></script>
+    <script src="~/js/bootstrap.min.js"></script>
+    <script src="~/js/site.js"></script>
+</body>
+</html>

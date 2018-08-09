@@ -7,12 +7,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Views\Shared\**" />
+    <Content Remove="Views\Shared\**" />
+    <EmbeddedResource Remove="Views\Shared\**" />
+    <None Remove="Views\Shared\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Remove="Views\FHIRcastClient.cshtml" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Hubs\" />
-    <Folder Include="Views\Shared\" />
     <Folder Include="wwwroot\images\" />
   </ItemGroup>
 

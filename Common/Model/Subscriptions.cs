@@ -9,7 +9,7 @@ namespace FHIRcastSandbox.Model {
     public abstract class SubscriptionBase : ModelBase {
         public static IEqualityComparer<Subscription> DefaultComparer => new SubscriptionComparer();
 
-        [BindRequired]
+        [BindNever]
         public string UID { get; set; }
 
         [BindRequired]

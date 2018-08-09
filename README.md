@@ -10,7 +10,7 @@ The FHIRcast Sandbox is a tool that allows users to simulate the workflow of the
 You can develop on and run this project locally by using the following steps below. The projects consists of two parts:
 
 0. A FHIRcast Hub implementation with a non-standard API to show its current state.
-0. A [WebSub client](websub-client) that can subscribe to a Hub using standard APIs and a web application that can notify other client connected to the hub as well as receive notifications from those client.
+0. A [WebSub client](WebSubClient) that can subscribe to a Hub using standard APIs and a web application that can notify other client connected to the hub as well as receive notifications from those client.
 
 ### Development without Docker (recommended)
 
@@ -64,5 +64,3 @@ See the [in progress Tutorial](https://github.com/fhircast/sandbox/wiki/Tutorial
 We welcome any contributions to help further enhance this tool for the FHIRcast community! To contribute to this project, please see instructions above for running the application locally and testing the app to make sure the tool works as expected with your incorporated changes. Then follow the steps below.
 
 1. Issue a pull request on the `fhircast/sandbox` repository with your changes for review.
-
-websub-client: WebSubClient/README.md

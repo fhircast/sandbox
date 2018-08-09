@@ -35,7 +35,7 @@
                                 <div align="center">
                                     <fieldset class="SubscriptionFieldSet">
                                         @{
-                                            using (Html.BeginForm("Subscribe", "FHIRcastClient", FormMethod.Post))
+                                            using (Html.BeginForm("Subscribe", "WebSubClient", FormMethod.Post))
                                             {
                                                 <label>Hub url</label>
                                                 <br />
@@ -101,7 +101,7 @@
                         <div align="center">
                             <fieldset class="UserSessionFieldSet">
                                 @{
-                                    using (Html.BeginForm("Post", "FHIRcastClient", FormMethod.Post))
+                                    using (Html.BeginForm("Post", "WebSubClient", FormMethod.Post))
                                     {
                                         <div class="row">
                                             <div class="col">
@@ -165,7 +165,7 @@
                     <div class="col-12">
                         <div align="center">
                             @{
-                                using (Html.BeginForm("Refresh", "FHIRcastClient", FormMethod.Post))
+                                using (Html.BeginForm("Refresh", "WebSubClient", FormMethod.Post))
                                 {
                                     <div class="form-group">
                                         <input type="submit" value="Refresh" class="btn btn-primary" />

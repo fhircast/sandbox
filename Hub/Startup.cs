@@ -18,7 +18,6 @@ namespace FHIRcastSandbox {
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services) {
             services.AddMvc();
-            services.AddSignalR();
             services.AddHangfire(config => config
                 .UseNLogLogProvider()
                 .UseMemoryStorage());
@@ -38,9 +37,6 @@ namespace FHIRcastSandbox {
             app.UseMvc();
             app.UseHangfireServer();
             app.UseStaticFiles();
-            app.UseSignalR(routes => {
-                routes.MapHub<FHIRcastSandbox.Hubs.ClientHub>("/clienthub");
-            });
 
             JobActivator.Current = new ServiceProviderJobActivator(app.ApplicationServices);
         }

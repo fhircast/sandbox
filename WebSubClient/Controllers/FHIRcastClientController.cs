@@ -1,14 +1,14 @@
-using FHIRcastSandbox.Model;
-using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using FHIRcastSandbox.Model;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace FHIRcastSandbox.Controllers {
     [Route("")]
@@ -24,15 +24,12 @@ namespace FHIRcastSandbox.Controllers {
     public class FHIRcastClientController : Controller {
 
         private readonly ILogger<FHIRcastClientController> logger;
-        private readonly ISubscriptions subscriptions;
 
         #region Constructors
-        public FHIRcastClientController(ILogger<FHIRcastClientController> logger, ISubscriptions subscriptions)
-        {
+        public FHIRcastClientController(ILogger<FHIRcastClientController> logger) {
             this.logger = logger;
-            this.subscriptions = subscriptions;
             this.UID = Guid.NewGuid().ToString("n");
-        } 
+        }
         #endregion
 
         #region Properties
@@ -48,8 +45,7 @@ namespace FHIRcastSandbox.Controllers {
         public IActionResult Get() => View("FHIRcastClient", new ClientModel());
 
         #region Client Events
-        public IActionResult Refresh()
-        {
+        public IActionResult Refresh() {
             if (internalModel == null) { internalModel = new ClientModel(); }
 
             internalModel.ActiveSubscriptions = activeSubs.Values.ToList();
@@ -65,8 +61,7 @@ namespace FHIRcastSandbox.Controllers {
         /// <returns></returns>
         [Route("post")]
         [HttpPost]
-        public IActionResult Post([FromForm] ClientModel model)
-        {
+        public IActionResult Post([FromForm] ClientModel model) {
 
             internalModel = model;
             var httpClient = new HttpClient();
@@ -87,8 +82,7 @@ namespace FHIRcastSandbox.Controllers {
         /// <param name="verification">Hub's verification response to our subscription attempt</param>
         /// <returns></returns>
         [HttpGet("{subscriptionId}")]
-        public IActionResult Get(string subscriptionId, [FromQuery] SubscriptionVerification verification)
-        {
+        public IActionResult Get(string subscriptionId, [FromQuery] SubscriptionVerification verification) {
             //Received a verification request for non-pending subscription, return a NotFound response
             if (!pendingSubs.ContainsKey(subscriptionId)) { return NotFound(); }
 
@@ -96,15 +90,12 @@ namespace FHIRcastSandbox.Controllers {
 
             //Validate verification subcription with our subscription. If a match return challenge
             //otherwise return NotFound response.
-            if (SubsEqual(sub, verification))
-            {
+            if (SubsEqual(sub, verification)) {
                 //Move subscription to active sub collection and remove from pending subs
                 activeSubs.Add(subscriptionId, sub);
                 pendingSubs.Remove(subscriptionId);
                 return this.Content(verification.Challenge);
-            }
-            else
-            {
+            } else {
                 return NotFound();
             }
         }
@@ -116,8 +107,7 @@ namespace FHIRcastSandbox.Controllers {
         /// <param name="notification"></param>
         /// <returns></returns>
         [HttpPost("{subscriptionId}")]
-        public IActionResult Post(string subscriptionId, [FromBody] Notification notification)
-        {
+        public IActionResult Post(string subscriptionId, [FromBody] Notification notification) {
             //If we do not have an active subscription matching the id then return a notfound error
             if (!activeSubs.ContainsKey(subscriptionId)) { return NotFound(); }
 
@@ -132,7 +122,7 @@ namespace FHIRcastSandbox.Controllers {
             };
 
             return this.Ok(notification);
-        } 
+        }
 
         [Route("subscribe")]
         [HttpPost]
@@ -144,7 +134,8 @@ namespace FHIRcastSandbox.Controllers {
             var secret = Encoding.UTF8.GetString(buffer, 0, buffer.Length);
             var httpClient = new HttpClient();
             string subUID = Guid.NewGuid().ToString("n");
-            var data = new Subscription() {
+            var data = new Subscription()
+            {
                 UID = subUID,
                 Callback = new Uri(this.Request.Scheme + "://" + this.Request.Host + "/client/" + subUID),
                 Events = events.Split(";", StringSplitOptions.RemoveEmptyEntries),
@@ -181,8 +172,7 @@ namespace FHIRcastSandbox.Controllers {
 
         [Route("unsubscribe/{subscriptionId}")]
         [HttpPost]
-        public async Task<IActionResult> Unsubscribe(string subscriptionId)
-        {
+        public async Task<IActionResult> Unsubscribe(string subscriptionId) {
             this.logger.LogDebug($"Unsubscribing subscription {subscriptionId}");
             if (!activeSubs.ContainsKey(subscriptionId)) { return View("FHIRcastClient", internalModel); }
             Subscription sub = activeSubs[subscriptionId];
@@ -208,8 +198,7 @@ namespace FHIRcastSandbox.Controllers {
         #endregion
 
         #region Private methods
-        private bool SubsEqual(SubscriptionBase sub1, SubscriptionBase sub2)
-        {
+        private bool SubsEqual(SubscriptionBase sub1, SubscriptionBase sub2) {
             return sub1.Callback == sub2.Callback && sub1.Topic == sub2.Topic;
         }
         #endregion

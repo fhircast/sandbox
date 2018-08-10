@@ -38,6 +38,12 @@ to start the WebSub client. On a Unix operating system you can also run both ser
 $ (dotnet run --project Hub &) && (dotnet run --project WebSubClient &)
 ```
 
+and on Windows you can achieve the same thing like this in PowerShell:
+
+```powershell
+> "$pwd\Hub" | Start-Job { dotnet run --project $Input } -Name Hub; "$pwd\WebSubClient" | Start-Job { dotnet run --project $Input } -Name WebSubClient
+```
+
 You can then start issuing HTTP requests to the server. Here's an example using curl that will create a subscription and cause the Hub to attempt to validate your callback url (as defined in `my_url_encoded_callback`).
 
 ```sh
@@ -51,8 +57,16 @@ curl -d "hub.callback={my_url_encoded_callback}&hub.mode=subscribe&hub.topic={to
 
 To stop the background servers, run:
 
+For Unix:
+
 ```sh
 $ pkill dotnet
+```
+
+For Windows:
+
+```powershell
+> Stop-Job Hub, WebSubClient; Remove-Job Hub, WebSubClient
 ```
 
 #### Tutorial

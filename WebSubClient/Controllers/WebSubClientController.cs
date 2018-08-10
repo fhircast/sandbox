@@ -27,6 +27,9 @@ namespace FHIRcastSandbox.Controllers {
 
         private readonly ILogger<WebSubClientController> logger;
         private FhirClient client;
+        private Patient _patient;
+        private ImagingStudy _study;
+
 
         #region Constructors
         public WebSubClientController(ILogger<WebSubClientController> logger) {
@@ -41,47 +44,7 @@ namespace FHIRcastSandbox.Controllers {
             client.PreferredFormat = ResourceFormat.Json;
         }
 
-        private Patient GetPatient(string id)
-        {
-            Uri uri = new Uri("http://test.fhir.org/r3/Patient/" + id);
-            try
-            {
-                return client.Read<Patient>(uri);
-            }
-            catch (FhirOperationException ex)
-            {
-                foreach (var item in ex.Outcome.Children)
-                {
-                    Narrative nar = item as Narrative;
-                    if (nar != null)
-                    {
-                        internalModel.PatientOpenErrorDiv = nar.Div;
-                    }
-                }
-                return null;
-            }
-        }
-
-        private ImagingStudy GetStudy(string id)
-        {
-            Uri uri = new Uri("http://test.fhir.org/r3/ImagingStudy/" + id);
-            try
-            {
-                return client.Read<ImagingStudy>(uri);
-            }
-            catch (FhirOperationException ex)
-            {
-                foreach (var item in ex.Outcome.Children)
-                {
-                    Narrative nar = item as Narrative;
-                    if (nar != null)
-                    {
-                        internalModel.StudyOpenErrorDiv = nar.Div;
-                    }
-                }
-                return null;
-            }
-        }
+        
         #endregion
 
         #region Properties
@@ -131,21 +94,20 @@ namespace FHIRcastSandbox.Controllers {
         public IActionResult OpenPatient(string patientID)
         {
             if (internalModel == null) { internalModel = new ClientModel(); }
-            if (patientID.Length > 0)
+            if (patientID != null)
             {
-                Patient pat = GetPatient(patientID);
-                if (pat != null)
+                _patient = GetPatient(patientID);
+                if (_patient != null)
                 {
-                    internalModel.PatientName = $"{pat.Name[0].Family}, {pat.Name[0].Given.FirstOrDefault()}";
-                    internalModel.PatientDOB = pat.BirthDate;
-                    internalModel.PatientOpenErrorDiv = "";
-                }
-                else
-                {
-                    internalModel.PatientName = "";
-                    internalModel.PatientDOB = "";
-                }              
-            }          
+                    _study = null;
+                    ClearPatientInfo();
+                    return UpdateClientModel();
+                }             
+            }
+            else
+            {
+                internalModel.PatientOpenErrorDiv = "<div><p>No patient ID given.</p></div>";
+            }
 
             return View("WebSubClient", internalModel);
         }
@@ -155,21 +117,110 @@ namespace FHIRcastSandbox.Controllers {
         public IActionResult OpenStudy(string studyID)
         {
             if (internalModel == null) { internalModel = new ClientModel(); }
-            if (studyID.Length > 0)
+            if (studyID != null)
             {
-                ImagingStudy study = GetStudy(studyID);
-                if (study != null)
+                _study = GetStudy(studyID);
+                if (_study != null)
                 {
-                    internalModel.AccessionNumber = study.Accession.Value;
-                    internalModel.StudyOpenErrorDiv = "";
+                    ClearStudyInfo();
+                    ClearPatientInfo();
+                    return UpdateClientModel();
                 }
                 else
                 {
-                    internalModel.AccessionNumber = "";
+                    internalModel.StudyOpenErrorDiv = "<div><p>No study ID given.</p></div>";
                 }
             }
 
             return View("WebSubClient", internalModel);
+        }
+
+        private IActionResult UpdateClientModel()
+        {
+            //Study is nothing just use patient
+            //Otherwise get patient from study
+            if (_study != null)
+            {
+                _patient = GetPatient("", _study.Patient.Reference);
+
+                internalModel.AccessionNumber = (_study.Accession != null) ? _study.Accession.Value : "";
+                internalModel.StudyId = _study.Uid;
+            }
+            else
+            {
+                ClearStudyInfo();
+            }
+
+            if (_patient == null)
+            {
+                ClearPatientInfo();
+            }
+            else
+            {
+                internalModel.PatientName = $"{_patient.Name[0].Family}, {_patient.Name[0].Given.FirstOrDefault()}";
+                internalModel.PatientDOB = _patient.BirthDate;
+            }
+
+            return View("WebSubClient", internalModel);
+        }
+
+        private void ClearPatientInfo()
+        {
+            internalModel.PatientName = "";
+            internalModel.PatientDOB = "";
+            internalModel.PatientOpenErrorDiv = "";
+        }
+
+        private void ClearStudyInfo()
+        {
+            internalModel.StudyId = "";
+            internalModel.AccessionNumber = "";
+            internalModel.StudyOpenErrorDiv = "";
+        }
+
+        private Patient GetPatient(string id, string patientURI = "")
+        {
+            
+            Uri uri = new Uri("http://test.fhir.org/r3/Patient/" + id);
+
+            try
+            {
+                if (patientURI.Length > 0) { return client.Read<Patient>(patientURI); }
+                else { return client.Read<Patient>(uri); }               
+            }
+            catch (FhirOperationException ex)
+            {
+                foreach (var item in ex.Outcome.Children)
+                {
+                    Narrative nar = item as Narrative;
+                    if (nar != null)
+                    {
+                        internalModel.PatientOpenErrorDiv = nar.Div;
+                    }
+                }
+                return null;
+            }
+        }
+
+        private ImagingStudy GetStudy(string id)
+        {
+            Uri uri = new Uri("http://test.fhir.org/r3/ImagingStudy/" + id);
+            try
+            {
+                return client.Read<ImagingStudy>(uri);
+            }
+            catch (FhirOperationException ex)
+            {
+                foreach (var item in ex.Outcome.Children)
+                {
+                    Narrative nar = item as Narrative;
+                    if (nar != null)
+                    {
+                        internalModel.StudyOpenErrorDiv = nar.Div;
+                    }
+                }
+                return null;
+            }
         }
         #endregion
 

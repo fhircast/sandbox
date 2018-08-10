@@ -13,9 +13,9 @@ namespace FHIRcastSandbox.Model {
         public string UserIdentifier { get; set; }
         public string PatientIdentifier { get; set; }
         public string PatientIdIssuer { get; set; }
-        public string AccessionNumber { get; set; }
+        
         public string AccessionNumberGroup { get; set; }
-        public string StudyId { get; set; }
+        
         public string Event { get; set; }
         public string Topic { get; set; }
         public List<Subscription> ActiveSubscriptions { get; set; }
@@ -27,6 +27,8 @@ namespace FHIRcastSandbox.Model {
         public string PatientOpenErrorDiv { get; set; }
 
         //Study Info
+        public string StudyId { get; set; }
+        public string AccessionNumber { get; set; }
         public string StudyOpenErrorDiv { get; set; }
     }
 }

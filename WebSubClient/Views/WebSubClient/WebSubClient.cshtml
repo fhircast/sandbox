@@ -169,8 +169,10 @@
                                         <div class="col">
                                             <div class="form-group">
                                                 <label>Study</label>
-                                                <br/>
+                                                <br />
                                                 @Html.Label("Accession number: " + Model.AccessionNumber)
+                                                <br />
+                                                @Html.Label("Study ID: " + Model.StudyId)
                                             </div>
                                         </div>
                                     </div>
@@ -206,7 +208,7 @@
                                                 @{
                                                     using (Html.BeginForm("openStudy", "WebSubClient", FormMethod.Post))
                                                     {
-                                                        <label>Accession Number: </label>
+                                                        <label>Study ID: </label>
                                                         <br />
                                                         <div>
                                                             <input type="text" name="studyID" id="studyID" class="form-control" />

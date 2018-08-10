@@ -13,6 +13,7 @@ namespace FHIRcastSandbox.Model {
         public string UID { get; set; }
 
         [BindRequired]
+        [URLNameOverride("hub.callback")]
         public Uri Callback { get; set; }
 
         [BindRequired]
@@ -20,14 +21,16 @@ namespace FHIRcastSandbox.Model {
         public SubscriptionMode? Mode { get; set; }
 
         [BindRequired]
+        [URLNameOverride("hub.topic")]
         public string Topic { get; set; }
 
         [BindRequired]
+        [URLNameOverride("hub.events")]
         public string[] Events { get; set; }
     }
 
     public abstract class SubscriptionWithLease : SubscriptionBase {
-        [ModelBinder(Name = "lease_seconds")]
+        [URLNameOverride("hub.lease_seconds")]
         public int? LeaseSeconds { get; set; }
 
         [BindNever, JsonIgnore]
@@ -36,12 +39,14 @@ namespace FHIRcastSandbox.Model {
 
     public class Subscription : SubscriptionWithLease {
         [BindRequired]
+        [URLNameOverride("hub.secret")]
         public string Secret { get; set; }
         [BindNever, JsonIgnore]
         public string HubURL { get; set; }
     }
 
     public class SubscriptionCancelled : SubscriptionBase {
+        [URLNameOverride("hub.reason")]
         public string Reason { get; set; }
     }
 

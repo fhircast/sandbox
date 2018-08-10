@@ -155,6 +155,79 @@
                                             <input type="submit" value="Update" class="btn btn-secondary" />
                                         </div>
                                     }
+
+                                    <div class="row">
+                                        @* Patient context *@
+                                        <div class="col">
+                                            <label>Patient</label>
+                                            <br/>
+                                            @Html.Label("Name: " + Model.PatientName)       
+                                            <br />
+                                            @Html.Label("DOB: " + Model.PatientDOB)
+                                        </div>
+                                        @* Study context *@
+                                        <div class="col">
+                                            <div class="form-group">
+                                                <label>Study</label>
+                                                <br/>
+                                                @Html.Label("Accession number: " + Model.AccessionNumber)
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col">
+                                            <fieldset class="UserSessionFieldSet">
+                                                @{
+                                                    using (Html.BeginForm("openPatient", "WebSubClient", FormMethod.Post))
+                                                    {
+                                                        <label>Patient ID: </label>
+                                                        <br />
+                                                        <div>
+                                                            <input type="text" name="patientID" id="patientID" class="form-control" />
+                                                        </div>
+                                                        <br />
+                                                        <div class="alert-warning">
+                                                            @if (!string.IsNullOrEmpty(Model.PatientOpenErrorDiv))
+                                                            {
+                                                                @Html.Raw(Model.PatientOpenErrorDiv)
+                                                            }
+                                                        </div>
+                                                        
+                                                        <div class="row">
+                                                            <div class="col"><input type="submit" value="Open Patient" class="btn btn-secondary" /></div>
+                                                        </div>
+                                                    }
+                                                }
+                                            </fieldset>
+                                        </div>
+                                        <div class="col">
+                                            <fieldset class="UserSessionFieldSet">
+                                                @{
+                                                    using (Html.BeginForm("openStudy", "WebSubClient", FormMethod.Post))
+                                                    {
+                                                        <label>Accession Number: </label>
+                                                        <br />
+                                                        <div>
+                                                            <input type="text" name="studyID" id="studyID" class="form-control" />
+                                                        </div>
+                                                        <br />
+                                                        <div class="alert-warning">
+                                                            @if (!string.IsNullOrEmpty(Model.StudyOpenErrorDiv))
+                                                            {
+                                                                @Html.Raw(Model.StudyOpenErrorDiv)
+                                                            }
+                                                        </div>
+
+                                                        <div class="row">
+                                                            <div class="col"><input type="submit" value="Open Study" class="btn btn-secondary" /></div>
+                                                        </div>
+                                                    }
+                                                }
+                                            </fieldset>
+                                        </div>
+                                    </div>
+
                                 }
                             </fieldset>
                         </div>

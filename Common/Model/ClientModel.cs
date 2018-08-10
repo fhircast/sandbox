@@ -20,5 +20,13 @@ namespace FHIRcastSandbox.Model {
         public string Topic { get; set; }
         public List<Subscription> ActiveSubscriptions { get; set; }
         public List<Subscription> SubscriptionsToHub { get; set; }
+
+        //Patient Info
+        public string PatientName { get; set; }
+        public string PatientDOB { get; set; }
+        public string PatientOpenErrorDiv { get; set; }
+
+        //Study Info
+        public string StudyOpenErrorDiv { get; set; }
     }
 }

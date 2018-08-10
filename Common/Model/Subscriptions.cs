@@ -1,11 +1,12 @@
-using System.Collections.Generic;
-using System.Security.Cryptography;
-using System;
-using System.Linq;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq;
+using System.Security.Cryptography;
+using System;
 
 namespace FHIRcastSandbox.Model {
     public abstract class SubscriptionBase : ModelBase {
@@ -64,6 +65,11 @@ namespace FHIRcastSandbox.Model {
             subscription.HubURL = subscriptionUrl;
 
             return subscription;
+        }
+
+        public bool IsInterestedInNotification(Notification notification) {
+            return this.Events.Any(e => e == notification.Event.Event)
+                && notification.Event.Topic == this.Topic;
         }
     }
 

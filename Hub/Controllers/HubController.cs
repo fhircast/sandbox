@@ -26,18 +26,15 @@ namespace FHIRcastSandbox.Controllers {
         /// <summary>
         /// Adds a subscription to this hub.
         /// </summary>
-        /// <param name="hub">The subscription parameters</param>
+        /// <param name="hub">The subscription parameters.</param>
         /// <param name="_cancel">if set to <c>true</c> simulate cancelling/denying the subscription by sending this to the callback url.</param>
         /// <returns></returns>
         [HttpPost]
         public IActionResult Subscribe([FromForm]Subscription hub, bool _cancel = false) {
             this.logger.LogDebug($"Model valid state is {this.ModelState.IsValid}");
-            foreach (var modelProperty in this.ModelState)
-            {
-                if (modelProperty.Value.Errors.Count > 0)
-                {
-                    for (int i = 0; i < modelProperty.Value.Errors.Count; i++)
-                    {
+            foreach (var modelProperty in this.ModelState) {
+                if (modelProperty.Value.Errors.Count > 0) {
+                    for (int i = 0; i < modelProperty.Value.Errors.Count; i++) {
                         this.logger.LogDebug($"Error found for {modelProperty.Key}: {modelProperty.Value.Errors[i].ErrorMessage}");
                     }
                 }
@@ -71,7 +68,8 @@ namespace FHIRcastSandbox.Controllers {
             var subscriptions = this.subscriptions.GetSubscriptions(clientEvent.Topic, clientEvent.Event);
             this.logger.LogDebug($"Found {subscriptions.Count} subscriptions matching client event");
 
-            var notification = new Notification {
+            var notification = new Notification
+            {
                 Timestamp = DateTime.UtcNow,
                 Id = Guid.NewGuid().ToString("n"),
             };

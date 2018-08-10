@@ -4,22 +4,23 @@ const connection = new signalR.HubConnectionBuilder()
     .configureLogging(signalR.LogLevel.Information)
     .build();
 
-connection.on("ReceiveMessage", (message) => {
-    alert(message);
+connection.on("notification", (message) => {
+    console.log(message);
 });
 
 connection
     .start()
     .catch(err => console.error(err.toString()));
 
-function unsubscribe(subscriptionId) {
+$("#unsubscribe").submit(function (e) {
+    let form = $(this);
+    let url = form.attr("action");
+
     $.ajax({
         type: "POST",
-        url: "/client/unsubscribe/" + subscriptionId,
-        contentType: "application/json; charset=utf-8",
-        success: function (response) {
-            alert("Success");
-        },
+        url: url,
+        data: form.serialize(),
+        success: function (response) { },
         failure: function (response) {
             console.error(`Failed to unsubscribe: ${JSON.stringify(response)}`);
         },
@@ -27,4 +28,33 @@ function unsubscribe(subscriptionId) {
             console.error(`Error when unsubscribing: ${JSON.stringify(response)}`);
         }
     });
-}
+
+    e.preventDefault();
+});
+
+$("#subscribe").submit(function (e) {
+
+  let form = $(this);
+  let url = form.attr("action");
+
+  let data = form.serialize();
+  connectionId = connection.id;
+  data += `&connectionId=${connectionId}`;
+
+  console.log(`Subscribe data: ${data}`);
+
+  $.ajax({
+    type: "POST",
+    url: url,
+    data: data,
+    success: function (response) { },
+    failure: function (response) {
+      console.error(`Failed to subscribe: ${JSON.stringify(response)}`);
+    },
+    error: function (response) {
+      console.error(`Error when subscribing: ${JSON.stringify(response)}`);
+    }
+  });
+
+  e.preventDefault();
+});

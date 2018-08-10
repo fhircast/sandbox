@@ -1,15 +1,14 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
-using FHIRcastSandbox.Model.Http;
 using FHIRcastSandbox.Model;
+using FHIRcastSandbox.WebSubClient.Controllers;
+using FHIRcastSandbox.WebSubClient.Rules;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading.Tasks;
+using System;
 
 namespace FHIRcastSandbox.Controllers {
     [Route("")]
@@ -25,41 +24,17 @@ namespace FHIRcastSandbox.Controllers {
     public class WebSubClientController : Controller {
 
         private readonly ILogger<WebSubClientController> logger;
-        private readonly IConfiguration config;
+        private readonly ClientSubscriptions clientSubscriptions;
+        private readonly IHubSubscriptions hubSubscriptions;
 
-        #region Constructors
-
-        public WebSubClientController(ILogger<WebSubClientController> logger, IConfiguration config) {
+        public WebSubClientController(ILogger<WebSubClientController> logger, ClientSubscriptions clientSubscriptions, IHubSubscriptions hubSubscriptions) {
             this.logger = logger;
-            this.UID = Guid.NewGuid().ToString("n");
-            this.config = config;
+            this.clientSubscriptions = clientSubscriptions;
+            this.hubSubscriptions = hubSubscriptions;
         }
-
-        #endregion
-
-        #region Properties
-
-        public static ClientModel internalModel;
-
-        private static Dictionary<string, Subscription> pendingSubs = new Dictionary<string, Subscription>();
-        private static Dictionary<string, Subscription> activeSubs = new Dictionary<string, Subscription>();
-
-        public string UID { get; set; }
-
-        #endregion
 
         [HttpGet]
-        public IActionResult Get() => View("WebSubClient", new ClientModel());
-
-        #region Client Events
-
-        public IActionResult Refresh() {
-            if (internalModel == null) { internalModel = new ClientModel(); }
-
-            internalModel.ActiveSubscriptions = activeSubs.Values.ToList();
-
-            return View("WebSubClient", internalModel);
-        }
+        public IActionResult Get() => View(nameof(WebSubClientController).Replace("Controller", ""), new ClientModel());
 
         /// <summary>
         /// Called when the client updates its context. Lets the hub know of the changes so it
@@ -67,136 +42,68 @@ namespace FHIRcastSandbox.Controllers {
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        [Route("post")]
+        [Route("notify")]
         [HttpPost]
-        public IActionResult Post([FromForm] ClientModel model) {
-            internalModel = model;
+        public async Task<IActionResult> Post([FromForm] ClientModel model) {
             var httpClient = new HttpClient();
-            //var response = httpClient.PostAsync(this.Request.Scheme + "://" + this.Request.Host + "/api/hub/notify", new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json")).Result;
-            var response = httpClient.PostAsync(this.Request.Scheme + "://localhost:5000/api/hub/notify", new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json")).Result;
+            var response = await httpClient.PostAsync(this.Request.Scheme + "://" + this.Request.Host + "/api/hub/notify", new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json"));
 
-            return View("WebSubClient", model);
+            return View(model);
         }
 
-        #endregion
+        [Route("subscriptions")]
+        [HttpPost]
+        public async Task<IActionResult> Subscribe(string subscriptionUrl, string topic, string events, string connectionId) {
+            subscriptionUrl = subscriptionUrl ?? new UriBuilder(this.Request.Scheme, "localhost", 5000, "/api/hub").Uri.ToString();
+            var rngCsp = new RNGCryptoServiceProvider();
+            var buffer = new byte[64];
+            rngCsp.GetBytes(buffer);
+            var secret = Convert.ToBase64String(buffer);
+            string subUID = Guid.NewGuid().ToString("n");
+            var callbackUri = new UriBuilder(
+                this.Request.Scheme,
+                "localhost",
+                this.HttpContext.Connection.LocalPort,
+                $"/callback/{subUID}");
 
-        #region Subscription events
-
-        /// <summary>
-        /// Called by hub we sent a subscription request to. They are attempting to verify the subscription.
-        /// If the subscription matches one that we have sent out previously that hasn't been verified yet
-        /// then return their challenge value, otherwise return a NotFound error response.
-        /// </summary>
-        /// <param name="subscriptionId">ID of the subscription, part of the url</param>
-        /// <param name="verification">Hub's verification response to our subscription attempt</param>
-        /// <returns></returns>
-        [HttpGet("{subscriptionId}")]
-        public IActionResult Get(string subscriptionId, [FromQuery] SubscriptionVerification hub) {
-            var settingKey = "Settings:ValidateSubscriptionValidations";
-            var validate = this.config.GetValue<bool>(settingKey, true);
-
-            if (!validate) {
-                this.logger.LogWarning($"Not validating subscription validation due to setting {settingKey}.");
-                return this.Content(hub.Challenge);
-            }
-
-            var activeSubscription = pendingSubs.ContainsKey(subscriptionId);
-            if (!activeSubscription) {
-                // Received a hub request for non-pending subscription, return a NotFound response
-                return NotFound();
-            }
-
-            Subscription sub = pendingSubs[subscriptionId];
-
-            // Validate hub subcription with our subscription. If a
-            // match return challenge otherwise return NotFound response.
-            if (SubsEqual(sub, hub)) {
-                //Move subscription to active sub collection and remove from pending subs
-                activeSubs.Add(subscriptionId, sub);
-                pendingSubs.Remove(subscriptionId);
-                return this.Content(hub.Challenge);
-            } else {
-                return NotFound();
-            }
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="subscriptionId"></param>
-        /// <param name="notification"></param>
-        /// <returns></returns>
-        [HttpPost("{subscriptionId}")]
-        public IActionResult Post(string subscriptionId, [FromBody] Notification notification) {
-            //If we do not have an active subscription matching the id then return a notfound error
-            if (!activeSubs.ContainsKey(subscriptionId)) { return NotFound(); }
-
-            WebSubClientController.internalModel = new ClientModel()
+            var subscription = new Subscription()
             {
-                UserIdentifier = notification.Event.Context[0] == null ? "" : notification.Event.Context[0].ToString(),
-                PatientIdentifier = notification.Event.Context[1] == null ? "" : notification.Event.Context[1].ToString(),
-                PatientIdIssuer = notification.Event.Context[2] == null ? "" : notification.Event.Context[2].ToString(),
-                AccessionNumber = notification.Event.Context[3] == null ? "" : notification.Event.Context[3].ToString(),
-                AccessionNumberGroup = notification.Event.Context[4] == null ? "" : notification.Event.Context[4].ToString(),
-                StudyId = notification.Event.Context[5] == null ? "" : notification.Event.Context[5].ToString(),
+                UID = subUID,
+                Callback = callbackUri.Uri,
+                Events = events.Split(";", StringSplitOptions.RemoveEmptyEntries),
+                Mode = SubscriptionMode.subscribe,
+                Secret = secret,
+                LeaseSeconds = 3600,
+                Topic = topic,
+                HubURL = subscriptionUrl,
             };
 
-            return this.Ok(notification);
+            // First adding to pending and then sending the subscription to
+            // prevent a race.
+            this.clientSubscriptions.AddPendingSubscription(connectionId, subscription);
+            try {
+                await this.hubSubscriptions.SubscribeAsync(subscription);
+            }
+            catch {
+                this.clientSubscriptions.RemoveSubscription(connectionId);
+                throw;
+            }
+
+            return this.Ok();
         }
 
-        [Route("subscribe")]
-        [HttpPost]
-        public async Task<IActionResult> Subscribe(string subscriptionUrl, string topic, string events) {
-            var eventsArray = events.Split(";", StringSplitOptions.RemoveEmptyEntries);
-            var subscriptionId = Guid.NewGuid().ToString("n");
-            var callback = this.Request.Scheme + "://" + this.Request.Host + "/client/" + subscriptionId;
-            var subscription = Subscription.CreateNewSubscription(subscriptionId, subscriptionUrl, topic, eventsArray, callback);
-
-            pendingSubs.Add(subscription.UID, subscription);
-
-            this.logger.LogDebug($"Subscription for 'subscribing': {Environment.NewLine}{subscription}");
-
-            var httpcontent = subscription.CreateHttpContent();
-
-            this.logger.LogDebug($"Posting async to {subscriptionUrl}: {subscription}");
-
-            var result = await new HttpClient().PostAsync(subscriptionUrl, httpcontent);
-
-            if (internalModel == null) { internalModel = new ClientModel(); }
-            return View("WebSubClient", internalModel);
-        }
-
-        [Route("unsubscribe/{subscriptionId}")]
-        [HttpPost]
+        [Route("subscriptions/{subscriptionId}")]
+        [HttpDelete]
         public async Task<IActionResult> Unsubscribe(string subscriptionId) {
             this.logger.LogDebug($"Unsubscribing subscription {subscriptionId}");
-            if (!activeSubs.ContainsKey(subscriptionId)) { return View("WebSubClient", internalModel); }
-            Subscription sub = activeSubs[subscriptionId];
+            Subscription sub = this.clientSubscriptions.GetSubscription(subscriptionId);
             sub.Mode = SubscriptionMode.unsubscribe;
 
-            var httpClient = new HttpClient();
-            var result = await httpClient.PostAsync(sub.HubURL,
-                new StringContent(
-                    $"hub.callback={sub.Callback}" +
-                    $"&hub.mode={sub.Mode}" +
-                    $"&hub.topic={sub.Topic}" +
-                    $"&hub.secret={sub.Secret}" +
-                    $"&hub.events={string.Join(",", sub.Events)}" +
-                    $"&hub.lease_seconds={sub.LeaseSeconds}" +
-                    $"&hub.UID={sub.UID}",
-                    Encoding.UTF8,
-                    "application/x-www-form-urlencoded"));
+            await this.hubSubscriptions.Unsubscribe(sub);
+            this.clientSubscriptions.RemoveSubscription(subscriptionId);
 
-            activeSubs.Remove(subscriptionId);
-
-            return View("WebSubClient", internalModel);
+            return this.Ok();
         }
-        #endregion
-
-        #region Private methods
-        private bool SubsEqual(SubscriptionBase sub1, SubscriptionBase sub2) {
-            return sub1.Callback == sub2.Callback && sub1.Topic == sub2.Topic;
-        }
-        #endregion
     }
 }
+

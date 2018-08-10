@@ -77,7 +77,7 @@ namespace FHIRcastSandbox {
           var subscriptionUrl = $"http://localhost:{this.hubServerPort}/api/hub";
           var topic = "some_topic";
           var events = new[] { "some_event" };
-          var callback = $"http://localhost:{this.webSubClientServerPort}/client/{subscriptionId}";
+          var callback = $"http://localhost:{this.webSubClientServerPort}/callback/{subscriptionId}";
           var subscription = Subscription.CreateNewSubscription(subscriptionId, subscriptionUrl, topic, events, callback);
           var httpContent = subscription.CreateHttpContent();
 

@@ -41,6 +41,7 @@ namespace FHIRcastSandbox.Rules {
             callbackParameters.Events = subscription.Events;
             callbackParameters.Mode = subscription.Mode;
             callbackParameters.Topic = subscription.Topic;
+            callbackParameters.UID = subscription.UID;
 
             logger.LogDebug($"Calling callback url: {subscription.Callback}");
             var callbackUri = new SubscriptionCallback().GetCallbackUri(subscription, callbackParameters);

@@ -27,15 +27,18 @@ namespace FHIRcastSandbox.WebSubClient {
             }
 
             app.UseStaticFiles();
-            app.UseSignalR(routes => {
-                routes.MapHub<FHIRcastSandbox.Hubs.WebSubClientHub>("/clienthub");
-            });
 
             app.UseMvc(routes => {
                 routes.MapRoute(
                     name: "default",
                     template: "{controller=Home}/{action=Index}/{id?}");
             });
+
+            app.UseSignalR(routes => {
+                routes.MapHub<FHIRcastSandbox.Hubs.WebSubClientHub>("/websubclienthub");
+            });
+
+            app.UseMvc();
         }
     }
 }

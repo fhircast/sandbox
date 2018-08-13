@@ -1,10 +1,10 @@
-﻿using FHIRcastSandbox.Hubs;
+﻿using System.Threading.Tasks;
+using FHIRcastSandbox.Hubs;
 using FHIRcastSandbox.Model;
 using FHIRcastSandbox.WebSubClient.Rules;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
-using System.Threading.Tasks;
 
 namespace FHIRcastSandbox.WebSubClient.Controllers {
     [Route("callback")]
@@ -59,18 +59,18 @@ namespace FHIRcastSandbox.WebSubClient.Controllers {
             //If we do not have an active subscription matching the id then return a notfound error
             var clients = this.clientSubscriptions.GetSubscribedClients(notification);
 
-            var internalModel = new ClientModel()
-            {
-                UserIdentifier = notification.Event.Context[0] == null ? "" : notification.Event.Context[0].ToString(),
-                PatientIdentifier = notification.Event.Context[1] == null ? "" : notification.Event.Context[1].ToString(),
-                PatientIdIssuer = notification.Event.Context[2] == null ? "" : notification.Event.Context[2].ToString(),
-                AccessionNumber = notification.Event.Context[3] == null ? "" : notification.Event.Context[3].ToString(),
-                AccessionNumberGroup = notification.Event.Context[4] == null ? "" : notification.Event.Context[4].ToString(),
-                StudyId = notification.Event.Context[5] == null ? "" : notification.Event.Context[5].ToString(),
-            };
+            //var internalModel = new ClientModel()
+            //{
+            //    UserIdentifier = notification.Event.Context[0] == null ? "" : notification.Event.Context[0].ToString(),
+            //    PatientIdentifier = notification.Event.Context[1] == null ? "" : notification.Event.Context[1].ToString(),
+            //    PatientIdIssuer = notification.Event.Context[2] == null ? "" : notification.Event.Context[2].ToString(),
+            //    AccessionNumber = notification.Event.Context[3] == null ? "" : notification.Event.Context[3].ToString(),
+            //    AccessionNumberGroup = notification.Event.Context[4] == null ? "" : notification.Event.Context[4].ToString(),
+            //    StudyId = notification.Event.Context[5] == null ? "" : notification.Event.Context[5].ToString(),
+            //};
 
             await this.webSubClientHubContext.Clients.Clients(clients)
-                .SendAsync("notification", internalModel);
+                .SendAsync("notification", notification);
 
             return this.Ok();
         }

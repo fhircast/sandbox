@@ -1,12 +1,12 @@
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq;
 using System.Security.Cryptography;
 using System;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace FHIRcastSandbox.Model {
     public abstract class SubscriptionBase : ModelBase {
@@ -28,6 +28,7 @@ namespace FHIRcastSandbox.Model {
 
         [BindRequired]
         [URLNameOverride("hub.events")]
+        [ModelBinder(typeof(EventsArrayModelBinder))]
         public string[] Events { get; set; }
     }
 
@@ -108,10 +109,14 @@ namespace FHIRcastSandbox.Model {
     }
 
     public class NotificationEvent {
+        [ModelBinder(Name = "hub.topic")]
         [JsonProperty(PropertyName = "hub.topic")]
         public string Topic { get; set; }
+
+        [ModelBinder(Name = "hub.event")]
         [JsonProperty(PropertyName = "hub.event")]
         public string Event { get; set; }
+
         [JsonProperty(PropertyName = "context")]
         public object[] Context { get; set; }
     }

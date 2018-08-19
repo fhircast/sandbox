@@ -1,3 +1,10 @@
+using FHIRcastSandbox.Model;
+using Hl7.Fhir.Model;
+using Hl7.Fhir.Rest;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -5,14 +12,9 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using FHIRcastSandbox.Model;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Hl7.Fhir.Rest;
-using Hl7.Fhir.Model;
 
-namespace FHIRcastSandbox.Controllers {
+namespace FHIRcastSandbox.Controllers
+{
     [Route("")]
     public class HomeController : Controller {
         public IActionResult Index() {
@@ -25,22 +27,24 @@ namespace FHIRcastSandbox.Controllers {
     [Route("client")]
     public class WebSubClientController : Controller {
 
-        private readonly ILogger<WebSubClientController> logger;
-        private FhirClient client;
-        private Patient _patient;
-        private ImagingStudy _study;
-
+        
 
         #region Constructors
         public WebSubClientController(ILogger<WebSubClientController> logger) {
             this.logger = logger;
             this.UID = Guid.NewGuid().ToString("n");
-            createFHIRClient();
+
+            if (internalModel == null)
+            {
+                internalModel = new ClientModel();
+                internalModel.FHIRServer = DEFAULT_FHIR_SERVER;
+                createFHIRClient();
+            }           
         }
 
-        private void createFHIRClient()
+        private void createFHIRClient(string fhirServer = DEFAULT_FHIR_SERVER)
         {
-            client = new FhirClient("http://test.fhir.org/r3");
+            client = new FhirClient(fhirServer);
             client.PreferredFormat = ResourceFormat.Json;
         }
 
@@ -53,23 +57,29 @@ namespace FHIRcastSandbox.Controllers {
         private static Dictionary<string, Model.Subscription> pendingSubs = new Dictionary<string, Model.Subscription>();
         private static Dictionary<string, Model.Subscription> activeSubs = new Dictionary<string, Model.Subscription>();
 
+        private readonly ILogger<WebSubClientController> logger;
+        private static FhirClient client;
+        private static Patient _patient;
+        private static ImagingStudy _study;
+        const string DEFAULT_FHIR_SERVER = "http://test.fhir.org/r3";
+        private const string VIEW_NAME = "WebSubClient";
+
         public string UID { get; set; }
         #endregion
 
         [HttpGet]
-        public IActionResult Get() => View("WebSubClient", new ClientModel());
+        public IActionResult Get()
+        {         
+            return View(VIEW_NAME, internalModel);
+        }
 
         #region Client Events
         public IActionResult Refresh() {
             if (internalModel == null) { internalModel = new ClientModel(); }
 
             internalModel.ActiveSubscriptions = activeSubs.Values.ToList();
-            //internalModel.PatientName = GetPatient("100").Name[0].ToString();
-            //internalModel.PatientDOB = GetPatient("100").BirthDate;
-            return View("WebSubClient", internalModel);
+            return View(VIEW_NAME, internalModel);
         }
-
-
 
         /// <summary>
         /// Called when the client updates its context. Lets the hub know of the changes so it
@@ -86,19 +96,45 @@ namespace FHIRcastSandbox.Controllers {
             //var response = httpClient.PostAsync(this.Request.Scheme + "://" + this.Request.Host + "/api/hub/notify", new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json")).Result;
             var response = httpClient.PostAsync(this.Request.Scheme + "://localhost:5000/api/hub/notify", new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json")).Result;
 
-            return View("WebSubClient", model);
+            return View(VIEW_NAME, model);
+        }
+
+        [Route("searchPatients")]
+        [HttpPost]
+        public IActionResult SearchPatients(string patientID, string patientName)
+        {
+            SearchParams pars = new SearchParams();
+            if (patientID != null) { pars.Add("_id", patientID); }
+            if (patientName != null) { pars.Add("name", patientName); }
+
+            Bundle bundle = client.Search<Patient>(pars);
+
+            List<SelectListItem> patients = new List<SelectListItem>();
+            foreach (Bundle.EntryComponent entry in bundle.Entry)
+            {
+                Patient pat = (Patient)entry.Resource;
+                patients.Add(new SelectListItem
+                {
+                    Value = pat.Id,
+                    Text = pat.Name[0].ToString()
+                });
+            }
+
+            internalModel.SearchPatients = new SelectList(patients, "Value", "Text");
+
+            return View(VIEW_NAME, internalModel);
         }
 
         [Route("openPatient")]
         [HttpPost]
-        public IActionResult OpenPatient(string patientID)
+        public IActionResult OpenPatient(string patientSelect)
         {
             if (internalModel == null) { internalModel = new ClientModel(); }
-            if (patientID != null)
+            if (patientSelect != null)
             {
-                _patient = GetPatient(patientID);
+                _patient = GetPatient(patientSelect);
                 if (_patient != null)
-                {
+                {                   
                     _study = null;
                     ClearPatientInfo();
                     return UpdateClientModel();
@@ -109,7 +145,7 @@ namespace FHIRcastSandbox.Controllers {
                 internalModel.PatientOpenErrorDiv = "<div><p>No patient ID given.</p></div>";
             }
 
-            return View("WebSubClient", internalModel);
+            return View(VIEW_NAME, internalModel);
         }
 
         [Route("openStudy")]
@@ -132,7 +168,22 @@ namespace FHIRcastSandbox.Controllers {
                 }
             }
 
-            return View("WebSubClient", internalModel);
+            return View(VIEW_NAME, internalModel);
+        }
+
+        [Route("saveSettings")]
+        [HttpPost]
+        public IActionResult SaveSettings(string fhirServer)
+        {
+            //return PartialView("ErrorModal");
+            if (fhirServer != internalModel.FHIRServer)
+
+            {
+                internalModel.FHIRServer = fhirServer;
+                createFHIRClient(internalModel.FHIRServer);
+            }
+            
+            return View(VIEW_NAME, internalModel);
         }
 
         private IActionResult UpdateClientModel()
@@ -161,7 +212,9 @@ namespace FHIRcastSandbox.Controllers {
                 internalModel.PatientDOB = _patient.BirthDate;
             }
 
-            return View("WebSubClient", internalModel);
+
+            internalModel.Patient = _patient;
+            return View(VIEW_NAME, internalModel);
         }
 
         private void ClearPatientInfo()
@@ -180,13 +233,12 @@ namespace FHIRcastSandbox.Controllers {
 
         private Patient GetPatient(string id, string patientURI = "")
         {
-            
-            Uri uri = new Uri("http://test.fhir.org/r3/Patient/" + id);
+            Uri uri = new Uri(client.Endpoint + "Patient/" + id);
 
             try
             {
                 if (patientURI.Length > 0) { return client.Read<Patient>(patientURI); }
-                else { return client.Read<Patient>(uri); }               
+                else { return client.Read<Patient>(uri); }
             }
             catch (FhirOperationException ex)
             {
@@ -204,7 +256,7 @@ namespace FHIRcastSandbox.Controllers {
 
         private ImagingStudy GetStudy(string id)
         {
-            Uri uri = new Uri("http://test.fhir.org/r3/ImagingStudy/" + id);
+            Uri uri = new Uri(client.Endpoint + "ImagingStudy/" + id);
             try
             {
                 return client.Read<ImagingStudy>(uri);
@@ -320,14 +372,14 @@ namespace FHIRcastSandbox.Controllers {
             var result = await httpClient.PostAsync(subscriptionUrl, httpcontent);
 
             if (internalModel == null) { internalModel = new ClientModel(); }
-            return View("WebSubClient", internalModel);
+            return View(VIEW_NAME, internalModel);
         }
 
         [Route("unsubscribe/{subscriptionId}")]
         [HttpPost]
         public async Task<IActionResult> Unsubscribe(string subscriptionId) {
             this.logger.LogDebug($"Unsubscribing subscription {subscriptionId}");
-            if (!activeSubs.ContainsKey(subscriptionId)) { return View("WebSubClient", internalModel); }
+            if (!activeSubs.ContainsKey(subscriptionId)) { return View(VIEW_NAME, internalModel); }
             Model.Subscription sub = activeSubs[subscriptionId];
             sub.Mode = SubscriptionMode.unsubscribe;
 
@@ -346,7 +398,7 @@ namespace FHIRcastSandbox.Controllers {
 
             activeSubs.Remove(subscriptionId);
 
-            return View("WebSubClient", internalModel);
+            return View(VIEW_NAME, internalModel);
         }
         #endregion
 

@@ -10,6 +10,7 @@
 <head>
     <meta name="viewport" content="width=device-width" />
     <link rel="stylesheet" type="text/css" href="~/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="~/css/Style.css" />
     <title>View</title>
 </head>
@@ -22,13 +23,13 @@
                 <h2 align="center">Client info</h2>
                 @* Title row *@
                 <div class="row">
-                    <div class="col-6"><h3 align="center">Subscription info</h3></div>
-                    <div class="col-6"><h3 align="center">User session info</h3></div>
+                    <div class="col-4"><h3 align="center">Subscription info</h3></div>
+                    <div class="col-8"><h3 align="center">User session info</h3></div>
                 </div>
                 @* Content row *@
                 <div class="row justify-content-md-center">
                     @* Subscription column *@
-                    <div class="col-6" style="border:1px solid black;">
+                    <div class="col-4" style="border:1px solid black;">
                         @* Create new subscriptions form *@
                         <div class="row">
                             <div class="col">
@@ -96,157 +97,123 @@
                             </div>
                         </div>
                     </div>
-                    @* User session column *@
-                    <div class="col-6" style="border:1px solid black">
+
+                    @* Session Info Column *@
+                    <div class="col-8" style="border:1px solid black">
                         <div align="center">
-                            <fieldset class="UserSessionFieldSet">
-                                @{
-                                    using (Html.BeginForm("Post", "WebSubClient", FormMethod.Post))
+                            @* Current status row *@
+                            <div class="row">
+                                @* Patient column *@
+                                <div class="col" style="border:1px solid black">
+                                    <div class="panel-title "><strong>Patient Context</strong></div>
+                                    @if (Model.Patient != null)
                                     {
-                                        <div class="row">
-                                            <div class="col">
-                                                <div class="form-group">
-                                                    <label>User Identifier</label>
-                                                    <br />
-                                                    @Html.TextBoxFor(m => m.UserIdentifier, new { @class = "form-control" })
-                                                </div>
-                                                <div class="form-group">
-                                                    <label>Patient Identifier</label>
-                                                    <br />
-                                                    @Html.TextBoxFor(m => m.PatientIdentifier, new { @class = "form-control" })
-                                                </div>
-                                                <div class="form-group">
-                                                    <label>Patient Id Issuer</label>
-                                                    <br />
-                                                    @Html.TextBoxFor(m => m.PatientIdIssuer, new { @class = "form-control" })
-                                                </div>
-                                            </div>
-                                            <div class="col">
-                                                <div class="form-group">
-                                                    <label>Accession Number</label>
-                                                    <br />
-                                                    @Html.TextBoxFor(m => m.AccessionNumber, new { @class = "form-control" })
-                                                </div>
-                                                <div class="form-group">
-                                                    <label>Accession Number Group</label>
-                                                    <br />
-                                                    @Html.TextBoxFor(m => m.AccessionNumberGroup, new { @class = "form-control" })
-                                                </div>
-                                                <div class="form-group">
-                                                    <label>Study Id</label>
-                                                    <br />
-                                                    @Html.TextBoxFor(m => m.StudyId, new { @class = "form-control" })
-                                                </div>
-                                            </div>
-                                        </div>
+                                        <br />
+                                        @Html.Label("Name: " + Model.Patient.Name[0].ToString()) @*Model.PatientName)*@
+                                        <br />
+                                        @Html.Label("ID: " + Model.Patient.Id)
+                                        <br />
+                                        @Html.Label("DOB: " + Model.Patient.BirthDate)
 
-
-                                        <div class="form-group">
-                                            <label>Topic</label>
-                                            <br />
-                                            @Html.TextBoxFor(m => m.Topic, new { @class = "form-control" })
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Event</label>
-                                            <br />
-                                            @Html.TextBoxFor(m => m.Event, new { @class = "form-control" })
-                                        </div>
-                                        <div class="form-group">
-                                            <input type="submit" value="Update" class="btn btn-secondary" />
-                                        </div>
+                                    } else
+                                    {
+                                        <div>No patient selected.</div>
                                     }
+                                </div>
+                                @* Study column *@
+                                <div class="col" style="border:1px solid black">
+                                    <label>Study</label>
+                                    <br />
+                                    @Html.Label("Accession number: " + Model.AccessionNumber)
+                                    <br />
+                                    @Html.Label("Study ID: " + Model.StudyId)
 
-                                    <div class="row">
-                                        @* Patient context *@
-                                        <div class="col">
-                                            <label>Patient</label>
-                                            <br/>
-                                            @Html.Label("Name: " + Model.PatientName)       
-                                            <br />
-                                            @Html.Label("DOB: " + Model.PatientDOB)
-                                        </div>
-                                        @* Study context *@
-                                        <div class="col">
-                                            <div class="form-group">
-                                                <label>Study</label>
-                                                <br />
-                                                @Html.Label("Accession number: " + Model.AccessionNumber)
-                                                <br />
-                                                @Html.Label("Study ID: " + Model.StudyId)
+
+                                </div>
+                            </div>
+                            @* Selection list row *@
+                            <div class="row">
+                                @* Patient column *@
+                                <div class="col" style="border:1px solid black">
+                                    <label>Available Patients</label>
+                                    </br>
+
+                                    @{
+                                        using (Html.BeginForm("openPatient", "WebSubClient", FormMethod.Post))
+                                        {
+                                            <select id="patientSelect" name="patientSelect" size="@Model.SearchPatients.ToList().Count" class="form-control">
+                                                @foreach (SelectListItem itm in Model.SearchPatients)
+                                                {
+                                                    <option value="@itm.Value">@itm.Text</option>
+                                                }
+                                            </select>
+                                            <div class="row">
+                                                <div class="col"><input type="submit" value="Open Patient" class="btn btn-secondary" /></div>
                                             </div>
-                                        </div>
-                                    </div>
+                                        }
+                                    }
+                                </div>
+                                @* Study column *@
+                                <div class="col" style="border:1px solid black">
+                                    <label>Available Studies</label>
+                                </div>
+                            </div>
+                            @* Search criteria row *@
+                            <div class="row">
+                                @* Patient column *@
+                                <div class="col" style="border:1px solid black">
+                                    <div class="panel-title "><strong>Patient search</strong></div>
+                                    
+                                    @{
+                                        using (Html.BeginForm("searchPatients", "WebSubClient", FormMethod.Post))
+                                        {
+                                            <label>Patient ID: </label>
+                                            <br />
+                                            <div>
+                                                <input type="text" name="patientID" id="patientID" class="form-control" />
+                                            </div>
+                                            <br />
+                                            <label>Patient Name: </label>
+                                            <br />
+                                            <div>
+                                                <input type="text" name="patientName" id="patientName" class="form-control" />
+                                            </div>
 
-                                    <div class="row">
-                                        <div class="col">
-                                            <fieldset class="UserSessionFieldSet">
-                                                @{
-                                                    using (Html.BeginForm("openPatient", "WebSubClient", FormMethod.Post))
-                                                    {
-                                                        <label>Patient ID: </label>
-                                                        <br />
-                                                        <div>
-                                                            <input type="text" name="patientID" id="patientID" class="form-control" />
-                                                        </div>
-                                                        <br />
-                                                        <div class="alert-warning">
-                                                            @if (!string.IsNullOrEmpty(Model.PatientOpenErrorDiv))
-                                                            {
-                                                                @Html.Raw(Model.PatientOpenErrorDiv)
-                                                            }
-                                                        </div>
-                                                        
-                                                        <div class="row">
-                                                            <div class="col"><input type="submit" value="Open Patient" class="btn btn-secondary" /></div>
-                                                        </div>
-                                                    }
+                                            <div class="row">
+                                                <div class="col"><input type="submit" value="Search Patients" class="btn btn-secondary" /></div>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                                @* Study column *@
+                                <div class="col" style="border:1px solid black">
+                                    <div class="panel-title "><strong>Study search</strong></div>
+                                </div>
+                            </div>
+                            @* Settings row *@
+                            <div class="row">
+                                <div class="col">
+                                    <div class="panel-group">
+                                        <div class="panel panel-default">
+                                            @{
+                                                using (Html.BeginForm("saveSettings", "WebSubClient", FormMethod.Post))
+                                                {
+                                                    <div class="panel-heading">
+                                                        <h4 class="panel-title">
+                                                            <a data-toggle="collapse" href="#settings">Settings</a>
+                                                        </h4>
+                                                    </div>
+                                                    <div id="settings" class="panel-collapse collapse">
+                                                        @*<div class="panel-body">@Html.TextBoxFor(m => m.FHIRServer, new { @class = "form-control" })</div>*@
+                                                        <label for="fhirServer">FHIR Server: </label><input type="text" name="fhirServer" id="fhirServer" class="form-control" value="@Model.FHIRServer" />
+                                                        <div class="panel-footer"><input type="submit" value="Save" class="btn btn-secondary" data-toggle="collapse" data-target="#settings" /></div>
+                                                    </div>
                                                 }
-                                            </fieldset>
-                                        </div>
-                                        <div class="col">
-                                            <fieldset class="UserSessionFieldSet">
-                                                @{
-                                                    using (Html.BeginForm("openStudy", "WebSubClient", FormMethod.Post))
-                                                    {
-                                                        <label>Study ID: </label>
-                                                        <br />
-                                                        <div>
-                                                            <input type="text" name="studyID" id="studyID" class="form-control" />
-                                                        </div>
-                                                        <br />
-                                                        <div class="alert-warning">
-                                                            @if (!string.IsNullOrEmpty(Model.StudyOpenErrorDiv))
-                                                            {
-                                                                @Html.Raw(Model.StudyOpenErrorDiv)
-                                                            }
-                                                        </div>
-
-                                                        <div class="row">
-                                                            <div class="col"><input type="submit" value="Open Study" class="btn btn-secondary" /></div>
-                                                        </div>
-                                                    }
-                                                }
-                                            </fieldset>
+                                            }
                                         </div>
                                     </div>
-
-                                }
-                            </fieldset>
-                        </div>
-                    </div>
-                </div>
-                @* Miscellaneous row *@
-                <div class="row">
-                    <div class="col-12">
-                        <div align="center">
-                            @{
-                                using (Html.BeginForm("Refresh", "WebSubClient", FormMethod.Post))
-                                {
-                                    <div class="form-group">
-                                        <input type="submit" value="Refresh" class="btn btn-primary" />
-                                    </div>
-                                }
-                            }
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -287,10 +254,27 @@
                 </div>
             </div>
         </div>
+
+        @* Miscellaneous row *@
+        <div class="row">
+            <div class="col-12">
+                <div align="center">
+                    @{
+                        using (Html.BeginForm("Refresh", "WebSubClient", FormMethod.Post))
+                        {
+                            <div class="form-group">
+                                <input type="submit" value="Refresh" class="btn btn-primary" />
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
     </div>
+
     <script src="~/js/jquery-3.3.1.min.js"></script>
     <script src="~/js/signalr.min.js"></script>
-    <script src="~/js/bootstrap.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     <script src="~/js/site.js"></script>
 </body>
 </html>

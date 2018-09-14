@@ -7,12 +7,7 @@
   <ItemGroup>
     <PackageReference Include="Hl7.Fhir.STU3" Version="0.96.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.1.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="Microsoft.AspNetCore.Mvc.ViewFeatures">
-      <HintPath>..\..\..\..\..\..\Program Files\dotnet\sdk\NuGetFallbackFolder\microsoft.aspnetcore.mvc.viewfeatures\2.1.1\lib\netstandard2.0\Microsoft.AspNetCore.Mvc.ViewFeatures.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.ViewFeatures" Version="2.1.1" />
   </ItemGroup>
 
 </Project>

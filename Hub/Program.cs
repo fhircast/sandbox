@@ -10,7 +10,7 @@ namespace FHIRcastSandbox {
             BuildWebHost(args).Run();
         }
 
-        public static IWebHostBuilder CreateWebHostBuilder(string[] args) {
+        public static IWebHostBuilder CreateWebHostBuilder(params string[] args) {
             return WebHost.CreateDefaultBuilder(args)
                 .UseStartup<Startup>()
                 .UseNLog();

@@ -2,11 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using FHIRcastSandbox.Model.Http;
 using FHIRcastSandbox.Model;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
@@ -24,27 +25,34 @@ namespace FHIRcastSandbox.Controllers {
     public class WebSubClientController : Controller {
 
         private readonly ILogger<WebSubClientController> logger;
+        private readonly IConfiguration config;
 
         #region Constructors
-        public WebSubClientController(ILogger<WebSubClientController> logger) {
+
+        public WebSubClientController(ILogger<WebSubClientController> logger, IConfiguration config) {
             this.logger = logger;
             this.UID = Guid.NewGuid().ToString("n");
+            this.config = config;
         }
+
         #endregion
 
         #region Properties
+
         public static ClientModel internalModel;
 
         private static Dictionary<string, Subscription> pendingSubs = new Dictionary<string, Subscription>();
         private static Dictionary<string, Subscription> activeSubs = new Dictionary<string, Subscription>();
 
         public string UID { get; set; }
+
         #endregion
 
         [HttpGet]
         public IActionResult Get() => View("WebSubClient", new ClientModel());
 
         #region Client Events
+
         public IActionResult Refresh() {
             if (internalModel == null) { internalModel = new ClientModel(); }
 
@@ -62,7 +70,6 @@ namespace FHIRcastSandbox.Controllers {
         [Route("post")]
         [HttpPost]
         public IActionResult Post([FromForm] ClientModel model) {
-
             internalModel = model;
             var httpClient = new HttpClient();
             //var response = httpClient.PostAsync(this.Request.Scheme + "://" + this.Request.Host + "/api/hub/notify", new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json")).Result;
@@ -70,6 +77,7 @@ namespace FHIRcastSandbox.Controllers {
 
             return View("WebSubClient", model);
         }
+
         #endregion
 
         #region Subscription events
@@ -83,19 +91,30 @@ namespace FHIRcastSandbox.Controllers {
         /// <param name="verification">Hub's verification response to our subscription attempt</param>
         /// <returns></returns>
         [HttpGet("{subscriptionId}")]
-        public IActionResult Get(string subscriptionId, [FromQuery] SubscriptionVerification verification) {
-            //Received a verification request for non-pending subscription, return a NotFound response
-            if (!pendingSubs.ContainsKey(subscriptionId)) { return NotFound(); }
+        public IActionResult Get(string subscriptionId, [FromQuery] SubscriptionVerification hub) {
+            var settingKey = "Settings:ValidateSubscriptionValidations";
+            var validate = this.config.GetValue<bool>(settingKey, true);
+
+            if (!validate) {
+                this.logger.LogWarning($"Not validating subscription validation due to setting {settingKey}.");
+                return this.Content(hub.Challenge);
+            }
+
+            var activeSubscription = pendingSubs.ContainsKey(subscriptionId);
+            if (!activeSubscription) {
+                // Received a hub request for non-pending subscription, return a NotFound response
+                return NotFound();
+            }
 
             Subscription sub = pendingSubs[subscriptionId];
 
-            //Validate verification subcription with our subscription. If a match return challenge
-            //otherwise return NotFound response.
-            if (SubsEqual(sub, verification)) {
+            // Validate hub subcription with our subscription. If a
+            // match return challenge otherwise return NotFound response.
+            if (SubsEqual(sub, hub)) {
                 //Move subscription to active sub collection and remove from pending subs
                 activeSubs.Add(subscriptionId, sub);
                 pendingSubs.Remove(subscriptionId);
-                return this.Content(verification.Challenge);
+                return this.Content(hub.Challenge);
             } else {
                 return NotFound();
             }
@@ -128,44 +147,20 @@ namespace FHIRcastSandbox.Controllers {
         [Route("subscribe")]
         [HttpPost]
         public async Task<IActionResult> Subscribe(string subscriptionUrl, string topic, string events) {
+            var eventsArray = events.Split(";", StringSplitOptions.RemoveEmptyEntries);
+            var subscriptionId = Guid.NewGuid().ToString("n");
+            var callback = this.Request.Scheme + "://" + this.Request.Host + "/client/" + subscriptionId;
+            var subscription = Subscription.CreateNewSubscription(subscriptionId, subscriptionUrl, topic, eventsArray, callback);
 
-            var rngCsp = new RNGCryptoServiceProvider();
-            var buffer = new byte[100];
-            rngCsp.GetBytes(buffer);
-            var secret = Encoding.UTF8.GetString(buffer, 0, buffer.Length);
-            var httpClient = new HttpClient();
-            string subUID = Guid.NewGuid().ToString("n");
-            var data = new Subscription()
-            {
-                UID = subUID,
-                Callback = new Uri(this.Request.Scheme + "://" + this.Request.Host + "/client/" + subUID),
-                Events = events.Split(";", StringSplitOptions.RemoveEmptyEntries),
-                Mode = SubscriptionMode.subscribe,
-                Secret = secret,
-                LeaseSeconds = 3600,
-                Topic = topic
-            };
-            data.HubURL = subscriptionUrl;
-            pendingSubs.Add(subUID, data);
+            pendingSubs.Add(subscription.UID, subscription);
 
-            this.logger.LogDebug($"Subscription for 'subscribing': {Environment.NewLine}{data}");
+            this.logger.LogDebug($"Subscription for 'subscribing': {Environment.NewLine}{subscription}");
 
-            string content = $"hub.callback={data.Callback}" +
-                    $"&hub.mode={data.Mode}" +
-                    $"&hub.topic={data.Topic}" +
-                    $"&hub.secret={data.Secret}" +
-                    $"&hub.events={string.Join(",", data.Events)}" +
-                    $"&hub.lease_seconds={data.LeaseSeconds}" +
-                    $"&hub.UID={data.UID}";
+            var httpcontent = subscription.CreateHttpContent();
 
-            StringContent httpcontent = new StringContent(
-                    content,
-                    Encoding.UTF8,
-                    "application/x-www-form-urlencoded");
+            this.logger.LogDebug($"Posting async to {subscriptionUrl}: {subscription}");
 
-            this.logger.LogDebug($"Posting async to {subscriptionUrl}: {content}");
-
-            var result = await httpClient.PostAsync(subscriptionUrl, httpcontent);
+            var result = await new HttpClient().PostAsync(subscriptionUrl, httpcontent);
 
             if (internalModel == null) { internalModel = new ClientModel(); }
             return View("WebSubClient", internalModel);

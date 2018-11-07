@@ -1,15 +1,16 @@
+using System.Collections.Generic;
+using System.Security.Cryptography;
+using System;
+using System.Linq;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
-using System.Collections.Generic;
-using System;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace FHIRcastSandbox.Model {
     public abstract class SubscriptionBase : ModelBase {
         public static IEqualityComparer<Subscription> DefaultComparer => new SubscriptionComparer();
 
-        [BindNever]
         public string UID { get; set; }
 
         [BindRequired]
@@ -41,8 +42,29 @@ namespace FHIRcastSandbox.Model {
         [BindRequired]
         [URLNameOverride("hub.secret")]
         public string Secret { get; set; }
+
         [BindNever, JsonIgnore]
         public string HubURL { get; set; }
+
+        public static Subscription CreateNewSubscription(string subscriptionId, string subscriptionUrl, string topic, string[] events, string callback) {
+            var rngCsp = new RNGCryptoServiceProvider();
+            var buffer = new byte[32];
+            rngCsp.GetBytes(buffer);
+            var secret = BitConverter.ToString(buffer).Replace("-", "");
+            var subscription = new Subscription()
+            {
+                UID = subscriptionId,
+                Callback = new Uri(callback),
+                Events = events,
+                Mode = SubscriptionMode.subscribe,
+                Secret = secret,
+                LeaseSeconds = 3600,
+                Topic = topic
+            };
+            subscription.HubURL = subscriptionUrl;
+
+            return subscription;
+        }
     }
 
     public class SubscriptionCancelled : SubscriptionBase {

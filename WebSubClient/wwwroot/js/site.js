@@ -5,7 +5,15 @@ const connection = new signalR.HubConnectionBuilder()
     .build();
 
 connection.on("notification", (message) => {
-    console.log(message);
+    console.debug(message);
+
+    var context = message.event.context[0];
+    $(".user-identifier").val(context.UserIdentifier);
+    $(".patient-identifier").val(context.PatientIdentifier);
+    $(".patient-id-issuer").val(context.PatientIdIssuer);
+    $(".accession-number").val(context.AccessionNumber);
+    $(".accession-number-group").val(context.AccessionNumberGroup);
+    $(".study-id").val(context.StudyId);
 });
 
 connection

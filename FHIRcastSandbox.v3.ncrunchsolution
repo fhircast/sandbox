@@ -1,5 +1,9 @@
 ﻿<SolutionConfiguration>
   <Settings>
+    <AdditionalFilesToIncludeForSolution>
+      <Value>Hub\**.*</Value>
+      <Value>WebSubClient\**.*</Value>
+    </AdditionalFilesToIncludeForSolution>
     <AllowParallelTestExecution>True</AllowParallelTestExecution>
     <SolutionConfigured>True</SolutionConfigured>
   </Settings>

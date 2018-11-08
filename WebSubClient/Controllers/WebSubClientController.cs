@@ -1,14 +1,12 @@
+using System;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
 using FHIRcastSandbox.Model;
-using FHIRcastSandbox.WebSubClient.Controllers;
 using FHIRcastSandbox.WebSubClient.Rules;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using System.Net.Http;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
-using System;
 
 namespace FHIRcastSandbox.Controllers {
     [Route("")]
@@ -34,7 +32,7 @@ namespace FHIRcastSandbox.Controllers {
         }
 
         [HttpGet]
-        public IActionResult Get() => View(nameof(WebSubClientController).Replace("Controller", ""), new ClientModel());
+        public IActionResult Get() => this.View(nameof(WebSubClientController).Replace("Controller", ""), new ClientModel());
 
         /// <summary>
         /// Called when the client updates its context. Lets the hub know of the changes so it
@@ -45,9 +43,29 @@ namespace FHIRcastSandbox.Controllers {
         [HttpPost("notify")]
         public async Task<IActionResult> Post([FromForm] ClientModel model) {
             var httpClient = new HttpClient();
-            var response = await httpClient.PostAsync(this.Request.Scheme + "://" + this.Request.Host + "/api/hub/notify", new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json"));
+            var notification = new Notification
+            {
+                Id = Guid.NewGuid().ToString(),
+                Timestamp = DateTime.Now,
+            };
+            notification.Event.Context = new[] {
+                new {
+                    model.AccessionNumber,
+                    model.AccessionNumberGroup,
+                    model.PatientIdentifier,
+                    model.PatientIdIssuer,
+                    model.StudyId,
+                    model.UserIdentifier,
+                }
+            };
+            notification.Event.Topic = model.Topic;
+            notification.Event.Event = model.Event;
 
-            return View(model);
+            var response = await httpClient.PostAsync(model.Topic, new StringContent(JsonConvert.SerializeObject(notification), Encoding.UTF8, "application/json"));
+
+            response.EnsureSuccessStatusCode();
+
+            return this.View("WebSubClient", model);
         }
     }
 }

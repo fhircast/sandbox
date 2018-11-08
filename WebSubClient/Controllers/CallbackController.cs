@@ -27,22 +27,24 @@ namespace FHIRcastSandbox.WebSubClient.Controllers {
         /// <param name="subscriptionId">ID of the subscription, part of the url</param>
         /// <param name="verification">Hub's verification response to our subscription attempt</param>
         /// <returns></returns>
-        [HttpGet("{subscriptionId}")]
-        public IActionResult SubscriptionVerification(string subscriptionId, [FromQuery] SubscriptionVerification hub) {
-            var verificationValidation = this.clientSubscriptions.ValidateVerification(hub);
+        [HttpGet("{connectionId}")]
+        public IActionResult SubscriptionVerification(string connectionId, [FromQuery] SubscriptionVerification hub) {
+            if (!this.config.GetValue("Settings:ValidateSubscriptionValidations", true)) {
+                return this.Content(hub.Challenge);
+            }
 
-            if (this.config.GetValue("Settings:ValidateSubscriptionValidations", true)) {
-                switch (verificationValidation) {
-                    case SubscriptionVerificationValidation.IsPendingVerification:
-                        this.clientSubscriptions.ActivateSubscription(hub.UID);
-                        break;
-                    case SubscriptionVerificationValidation.DoesNotExist:
-                        return this.NotFound();
-                    case SubscriptionVerificationValidation.IsAlreadyActive:
-                        break;
-                    default:
-                        break;
-                }
+            var verificationValidation = this.clientSubscriptions.ValidateVerification(connectionId, hub);
+
+            switch (verificationValidation) {
+                case SubscriptionVerificationValidation.IsPendingVerification:
+                    this.clientSubscriptions.ActivateSubscription(hub.Topic);
+                    break;
+                case SubscriptionVerificationValidation.DoesNotExist:
+                    return this.NotFound();
+                case SubscriptionVerificationValidation.IsAlreadyActive:
+                    break;
+                default:
+                    break;
             }
 
             return this.Content(hub.Challenge);

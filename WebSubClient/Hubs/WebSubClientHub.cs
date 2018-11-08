@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System;
+using System.Net;
 
 namespace FHIRcastSandbox.Hubs {
     /// <summary>
@@ -27,21 +28,21 @@ namespace FHIRcastSandbox.Hubs {
                 subscriptionUrl = new UriBuilder("http", "localhost", 5000, "/api/hub").Uri.ToString();
             }
 
+            var connectionId = this.Context.ConnectionId;
+
             var rngCsp = new RNGCryptoServiceProvider();
             var buffer = new byte[64];
             rngCsp.GetBytes(buffer);
             var secret = Convert.ToBase64String(buffer);
-            string subUID = Guid.NewGuid().ToString("n");
             var callbackUri = new UriBuilder(
                 "http",
                 "localhost",
                 5001,
-                $"/callback/{subUID}");
+                $"/callback/{connectionId}");
 
             var subscription = new Subscription()
             {
-                UID = subUID,
-                Callback = callbackUri.Uri,
+                Callback = callbackUri.Uri.OriginalString,
                 Events = events.Split(",", StringSplitOptions.RemoveEmptyEntries),
                 Mode = SubscriptionMode.subscribe,
                 Secret = secret,
@@ -52,7 +53,6 @@ namespace FHIRcastSandbox.Hubs {
 
             // First adding to pending and then sending the subscription to
             // prevent a race.
-            var connectionId = this.Context.ConnectionId;
             this.clientSubscriptions.AddPendingSubscription(connectionId, subscription);
             try {
                 await this.hubSubscriptions.SubscribeAsync(subscription);
@@ -63,13 +63,14 @@ namespace FHIRcastSandbox.Hubs {
             }
         }
 
-        public async Task Unsubscribe(string subscriptionId) {
-            this.logger.LogDebug($"Unsubscribing subscription {subscriptionId}");
-            Subscription sub = this.clientSubscriptions.GetSubscription(subscriptionId);
+        public async Task Unsubscribe() {
+            var clientConnectionId = this.Context.ConnectionId;
+            this.logger.LogDebug($"Unsubscribing subscription {clientConnectionId}");
+            Subscription sub = this.clientSubscriptions.GetSubscription(clientConnectionId);
             sub.Mode = SubscriptionMode.unsubscribe;
 
             await this.hubSubscriptions.Unsubscribe(sub);
-            this.clientSubscriptions.RemoveSubscription(subscriptionId);
+            this.clientSubscriptions.RemoveSubscription(clientConnectionId);
 
         }
     }

@@ -19,7 +19,7 @@ namespace FHIRcastSandbox.WebSubClient.Rules {
         public void ActivateSubscription(string subscriptionId) {
             var subscriptionsToActivate = this.subscriptions
                 .Where(x => x.Value.info.Status == SubscriptionStatus.Pending)
-                .Where(x => x.Value.sub.UID == subscriptionId);
+                .Where(x => x.Value.sub.Topic == subscriptionId);
 
             foreach (var sub in subscriptionsToActivate) {
                 sub.Value.info.Status = SubscriptionStatus.Active;
@@ -39,8 +39,8 @@ namespace FHIRcastSandbox.WebSubClient.Rules {
             return subscription;
         }
 
-        public SubscriptionVerificationValidation ValidateVerification(SubscriptionVerification verification) {
-            var existingSubscription = this.GetExistingSubscription(verification.UID);
+        public SubscriptionVerificationValidation ValidateVerification(string clientConnectionId, SubscriptionVerification verification) {
+            var existingSubscription = this.GetExistingSubscription(clientConnectionId);
 
             if (existingSubscription.Equals(default((SubscriptionInfo, Subscription)))) {
                 return SubscriptionVerificationValidation.DoesNotExist;
@@ -51,20 +51,12 @@ namespace FHIRcastSandbox.WebSubClient.Rules {
             return SubscriptionVerificationValidation.IsPendingVerification;
         }
 
-        public void RemoveSubscription(string subscriptionId) {
-            var connectionIdsToRemove = this.subscriptions
-                .Where(x => x.Value.sub.UID == subscriptionId)
-                .Select(x => x.Key);
-
-            foreach (var connectionId in connectionIdsToRemove) {
-                this.subscriptions.TryRemove(connectionId, out _);
-            }
+        public void RemoveSubscription(string clientConnectionId) {
+            this.subscriptions.TryRemove(clientConnectionId, out _);
         }
 
-        private (SubscriptionInfo info, Subscription subscription) GetExistingSubscription(string subscriptionId) {
-            return this.subscriptions.Values
-                .Where(val => val.sub.UID == subscriptionId)
-                .FirstOrDefault();
+        private (SubscriptionInfo info, Subscription subscription) GetExistingSubscription(string clientConnectionId) {
+            return this.subscriptions[clientConnectionId];
         }
     }
 

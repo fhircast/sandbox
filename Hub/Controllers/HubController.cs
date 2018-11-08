@@ -59,13 +59,17 @@ namespace FHIRcastSandbox.Controllers {
             return this.subscriptions.GetActiveSubscriptions();
         }
 
-        [Route("notify")]
+        [Route("{sessionId}")]
         [HttpPost]
-        public async Task<IActionResult> Notify([FromBody] Notification notification) {
+        public async Task<IActionResult> Notify(string sessionId, [FromBody] Notification notification) {
             this.logger.LogInformation($"Got notification from client: {notification}");
 
             var subscriptions = this.subscriptions.GetSubscriptions(notification.Event.Topic, notification.Event.Event);
             this.logger.LogDebug($"Found {subscriptions.Count} subscriptions matching client event");
+
+            if (subscriptions.Count == 0) {
+                return this.NotFound($"Could not find any subscriptions for sessionId {sessionId}.");
+            }
 
             //var notification = new Notification
             //{

@@ -82,7 +82,7 @@
                                                                 <td>@item.HubURL</td>
                                                                 <td>@item.Topic</td>
                                                                 <td>@String.Join(",", item.Events)</td>
-                                                                <td><button class="btn-primary" id="@item.UID" onclick="unsubscribe(this.id)">Unsubscribe</button></td>
+                                                                <td><button class="btn-primary" id="@item.GetUniqueId()" onclick="unsubscribe(this.id)">Unsubscribe</button></td>
                                                             </tr>
                                                         }
                                                     }

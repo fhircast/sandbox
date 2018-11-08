@@ -1,21 +1,18 @@
-using System.Collections.Generic;
-using System.Security.Cryptography;
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Newtonsoft.Json;
 
 namespace FHIRcastSandbox.Model {
     public abstract class SubscriptionBase : ModelBase {
         public static IEqualityComparer<Subscription> DefaultComparer => new SubscriptionComparer();
 
-        public string UID { get; set; }
-
         [BindRequired]
         [URLNameOverride("hub.callback")]
-        public Uri Callback { get; set; }
+        public string Callback { get; set; }
 
         [BindRequired]
         [URLNameOverride("hub.mode")]
@@ -27,7 +24,20 @@ namespace FHIRcastSandbox.Model {
 
         [BindRequired]
         [URLNameOverride("hub.events")]
+        [ModelBinder(typeof(EventsArrayModelBinder))]
         public string[] Events { get; set; }
+
+        /// <summary>
+        /// Gets a subscriber-unique ID of this subscription.
+        /// </summary>
+        /// <returns>An ID that is unique to the subscriber creating the subscription.</returns>
+        public string GetUniqueId() {
+            return GetSubscriptionId(this.Topic, this.Callback);
+        }
+
+        public static string GetSubscriptionId(string topic, string callback) {
+            return BitConverter.ToString(SHA256.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes((topic ?? "") + (callback ?? ""))));
+        }
     }
 
     public abstract class SubscriptionWithLease : SubscriptionBase {
@@ -46,15 +56,14 @@ namespace FHIRcastSandbox.Model {
         [BindNever, JsonIgnore]
         public string HubURL { get; set; }
 
-        public static Subscription CreateNewSubscription(string subscriptionId, string subscriptionUrl, string topic, string[] events, string callback) {
+        public static Subscription CreateNewSubscription(string subscriptionUrl, string topic, string[] events, string callback) {
             var rngCsp = new RNGCryptoServiceProvider();
             var buffer = new byte[32];
             rngCsp.GetBytes(buffer);
             var secret = BitConverter.ToString(buffer).Replace("-", "");
             var subscription = new Subscription()
             {
-                UID = subscriptionId,
-                Callback = new Uri(callback),
+                Callback = callback,
                 Events = events,
                 Mode = SubscriptionMode.subscribe,
                 Secret = secret,
@@ -64,6 +73,11 @@ namespace FHIRcastSandbox.Model {
             subscription.HubURL = subscriptionUrl;
 
             return subscription;
+        }
+
+        public bool IsInterestedInNotification(Notification notification) {
+            return this.Events.Any(e => e == notification.Event.Event)
+                && notification.Event.Topic == this.Topic;
         }
     }
 
@@ -102,18 +116,20 @@ namespace FHIRcastSandbox.Model {
     }
 
     public class NotificationEvent {
+        [ModelBinder(Name = "hub.topic")]
         [JsonProperty(PropertyName = "hub.topic")]
         public string Topic { get; set; }
+
+        [ModelBinder(Name = "hub.event")]
         [JsonProperty(PropertyName = "hub.event")]
         public string Event { get; set; }
+
         [JsonProperty(PropertyName = "context")]
         public object[] Context { get; set; }
     }
 
-    public class URLNameOverride : Attribute
-    {
-        public URLNameOverride(string value)
-        {
+    public class URLNameOverride : Attribute {
+        public URLNameOverride(string value) {
             this.Value = value;
         }
 

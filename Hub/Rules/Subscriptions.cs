@@ -26,9 +26,9 @@ namespace FHIRcastSandbox.Rules {
                 .ToArray();
         }
 
-        public Subscription GetSubscription(string subUID)
+        public Subscription GetSubscription(string sessionId)
         {
-            return this.subscriptions.Where(x => x.UID == subUID).First();
+            return this.subscriptions.Where(x => x.Topic == sessionId).First();
         }
 
         public void AddSubscription(Subscription subscription) {

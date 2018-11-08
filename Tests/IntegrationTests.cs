@@ -1,15 +1,14 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
-using System.Net;
 using System.Threading.Tasks;
-using System;
-using FHIRcastSandbox.Model.Http;
 using FHIRcastSandbox.Model;
+using FHIRcastSandbox.Model.Http;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -72,29 +71,29 @@ namespace FHIRcastSandbox {
 
         [Fact]
         public async Task ListingSubscriptions_AfterSubscribingToHub_ReturnsSubsription_Test() {
-          // Arrange
-          var subscriptionId = "some_id";
-          var subscriptionUrl = $"http://localhost:{this.hubServerPort}/api/hub";
-          var topic = "some_topic";
-          var events = new[] { "some_event" };
-          var callback = $"http://localhost:{this.webSubClientServerPort}/client/{subscriptionId}";
-          var subscription = Subscription.CreateNewSubscription(subscriptionId, subscriptionUrl, topic, events, callback);
-          var httpContent = subscription.CreateHttpContent();
+            // Arrange
+            var sessionId = "some_id";
+            var connectionId = "some_client_connection_id";
+            var subscriptionUrl = $"http://localhost:{this.hubServerPort}/api/hub";
+            var topic = $"{subscriptionUrl}/{sessionId}";
+            var events = new[] { "some_event" };
+            var callback = $"http://localhost:{this.webSubClientServerPort}/callback/{connectionId}";
+            var subscription = Subscription.CreateNewSubscription(subscriptionUrl, topic, events, callback);
+            var httpContent = subscription.CreateHttpContent();
 
-          var clientTestResponse = await new HttpClient().GetAsync(callback);
-          Assert.True(clientTestResponse.IsSuccessStatusCode, $"Could not connect to web sub client: {clientTestResponse}");
+            var clientTestResponse = await new HttpClient().GetAsync(callback);
+            Assert.True(clientTestResponse.IsSuccessStatusCode, $"Could not connect to web sub client: {clientTestResponse}");
 
-          var subscriptionResponse = await new HttpClient().PostAsync(subscriptionUrl, httpContent);
-          Assert.True(subscriptionResponse.IsSuccessStatusCode, $"Could not subscribe to hub: {subscriptionResponse}");
-          await Task.Delay(1000);
+            var subscriptionResponse = await new HttpClient().PostAsync(subscriptionUrl, httpContent);
+            Assert.True(subscriptionResponse.IsSuccessStatusCode, $"Could not subscribe to hub: {subscriptionResponse}");
+            await Task.Delay(1000);
 
-          // Act
-          var result = await new HttpClient().GetStringAsync(subscriptionUrl);
-          var subscriptions = JsonConvert.DeserializeObject<Subscription[]>(result);
+            // Act
+            var result = await new HttpClient().GetStringAsync(subscriptionUrl);
+            var subscriptions = JsonConvert.DeserializeObject<Subscription[]>(result);
 
-          // Assert
-          Assert.Single(subscriptions);
-          Assert.Equal(subscriptionId, subscriptions[0].UID);
+            // Assert
+            Assert.Single(subscriptions);
         }
 
         public void Dispose() {

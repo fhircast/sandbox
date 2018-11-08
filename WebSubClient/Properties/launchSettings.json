@@ -1,13 +1,12 @@
 {
   "profiles": {
     "WebSubClient": {
-      "applicationUrl": "http://localhost:5001/",
       "commandName": "Project",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
-      "launchBrowser": true,
-      "ssl": false
+      "ssl": false,
+      "applicationUrl": "http://localhost:5001/"
     }
   }
 }

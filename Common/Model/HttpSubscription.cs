@@ -10,8 +10,7 @@ namespace FHIRcastSandbox.Model.Http {
                 $"&hub.topic={source.Topic}" +
                 $"&hub.secret={source.Secret}" +
                 $"&hub.events={string.Join(",", source.Events)}" +
-                $"&hub.lease_seconds={source.LeaseSeconds}" +
-                $"&hub.UID={source.UID}";
+                $"&hub.lease_seconds={source.LeaseSeconds}";
 
             StringContent httpcontent = new StringContent(
                     content,

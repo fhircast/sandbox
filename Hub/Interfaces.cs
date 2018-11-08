@@ -1,8 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using FHIRcastSandbox.Model;
 using FHIRcastSandbox.Rules;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Threading.Tasks;
 
 namespace FHIRcastSandbox {
     public interface ISubscriptionValidator {
@@ -13,7 +13,7 @@ namespace FHIRcastSandbox {
         ICollection<Subscription> GetActiveSubscriptions();
         void AddSubscription(Subscription subscription);
         void RemoveSubscription(Subscription subscription);
-        ICollection<Subscription> GetSubscriptions(string topic, string notificationEvent);
+        ICollection<Subscription> GetSubscriptions(Uri topic, string notificationEvent);
     }
 
     public interface INotifications {

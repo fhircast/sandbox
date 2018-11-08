@@ -1,21 +1,18 @@
-using System.Collections.Generic;
-using System.Security.Cryptography;
 using System;
-using System.Linq;
+using System.Collections.Generic;
+using System.Runtime.Serialization;
+using System.Security.Cryptography;
+using System.Web;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace FHIRcastSandbox.Model {
     public abstract class SubscriptionBase : ModelBase {
         public static IEqualityComparer<Subscription> DefaultComparer => new SubscriptionComparer();
 
-        public string UID { get; set; }
-
         [BindRequired]
         [URLNameOverride("hub.callback")]
-        public Uri Callback { get; set; }
+        public string Callback { get; set; }
 
         [BindRequired]
         [URLNameOverride("hub.mode")]
@@ -23,11 +20,15 @@ namespace FHIRcastSandbox.Model {
 
         [BindRequired]
         [URLNameOverride("hub.topic")]
-        public string Topic { get; set; }
+        public Uri Topic { get; set; }
 
         [BindRequired]
         [URLNameOverride("hub.events")]
         public string[] Events { get; set; }
+
+        public string GetSubscriptionId() {
+            return $"{HttpUtility.UrlEncode(this.Topic.AbsoluteUri)}?{HttpUtility.UrlEncode(this.Callback)}";
+        }
     }
 
     public abstract class SubscriptionWithLease : SubscriptionBase {
@@ -46,15 +47,14 @@ namespace FHIRcastSandbox.Model {
         [BindNever, JsonIgnore]
         public string HubURL { get; set; }
 
-        public static Subscription CreateNewSubscription(string subscriptionId, string subscriptionUrl, string topic, string[] events, string callback) {
+        public static Subscription CreateNewSubscription(string subscriptionUrl, Uri topic, string[] events, string callback) {
             var rngCsp = new RNGCryptoServiceProvider();
             var buffer = new byte[32];
             rngCsp.GetBytes(buffer);
             var secret = BitConverter.ToString(buffer).Replace("-", "");
             var subscription = new Subscription()
             {
-                UID = subscriptionId,
-                Callback = new Uri(callback),
+                Callback = callback,
                 Events = events,
                 Mode = SubscriptionMode.subscribe,
                 Secret = secret,
@@ -62,6 +62,7 @@ namespace FHIRcastSandbox.Model {
                 Topic = topic
             };
             subscription.HubURL = subscriptionUrl;
+
 
             return subscription;
         }
@@ -110,10 +111,8 @@ namespace FHIRcastSandbox.Model {
         public object[] Context { get; set; }
     }
 
-    public class URLNameOverride : Attribute
-    {
-        public URLNameOverride(string value)
-        {
+    public class URLNameOverride : Attribute {
+        public URLNameOverride(string value) {
             this.Value = value;
         }
 

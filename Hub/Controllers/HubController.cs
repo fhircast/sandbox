@@ -68,7 +68,7 @@ namespace FHIRcastSandbox.Controllers {
         public async Task<IActionResult> Notify([FromBody] ClientModel clientEvent) {
             this.logger.LogInformation($"Got notification from client: {clientEvent}");
 
-            var subscriptions = this.subscriptions.GetSubscriptions(clientEvent.Topic, clientEvent.Event);
+            var subscriptions = this.subscriptions.GetSubscriptions(new Uri(clientEvent.Topic), clientEvent.Event);
             this.logger.LogDebug($"Found {subscriptions.Count} subscriptions matching client event");
 
             var notification = new Notification {

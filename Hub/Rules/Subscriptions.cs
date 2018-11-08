@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -18,17 +19,12 @@ namespace FHIRcastSandbox.Rules {
             return this.subscriptions;
         }
 
-        public ICollection<Subscription> GetSubscriptions(string topic, string notificationEvent) {
+        public ICollection<Subscription> GetSubscriptions(Uri topic, string notificationEvent) {
             this.logger.LogDebug($"Finding subscriptions for topic: {topic} and event: {notificationEvent}");
             return this.subscriptions
                 .Where(x => x.Topic == topic)
                 .Where(x => x.Events.Contains(notificationEvent))
                 .ToArray();
-        }
-
-        public Subscription GetSubscription(string subUID)
-        {
-            return this.subscriptions.Where(x => x.UID == subUID).First();
         }
 
         public void AddSubscription(Subscription subscription) {

@@ -73,6 +73,16 @@ For Windows:
 
 See the [in progress Tutorial](https://github.com/fhircast/sandbox/wiki/Tutorial) for a more detailed steps towards a hello world app. [Feedback](https://chat.fhir.org/#narrow/stream/118-FHIRcast) welcome (and needed)!
 
+### Development or runnign with Docker
+
+In order to launch the hub and the client using docker, use docker-compose from the root of the repository like so:
+
+```
+$ docker-compose up
+```
+
+This will build the docker containers and run the application on ports 5000 (for Hub) and 5001 (for the Client).
+
 ## Build and Contribution
 
 We welcome any contributions to help further enhance this tool for the FHIRcast community! To contribute to this project, please see instructions above for running the application locally and testing the app to make sure the tool works as expected with your incorporated changes. Then follow the steps below.

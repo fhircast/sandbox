@@ -1,0 +1,16 @@
+version: "3"
+services:
+  hub:
+    build:
+      context: ./
+      dockerfile: Dockerfile.hub
+    image: fhircast/hub
+    ports:
+      - "5000:80"
+  client:
+    build:
+      context: ./
+      dockerfile: Dockerfile.client
+    image: fhircast/client
+    ports:
+      - "5001:80"

@@ -19,6 +19,9 @@ namespace FHIRcastSandbox.Rules {
             var str = Newtonsoft.Json.JsonConvert.SerializeObject(notification);
             var content = new StringContent(str);
             content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+            var hubSignature = new HmacDigest().CreateHubSignature(subscription.Secret, str);
+            content.Headers.Add("X-Hub-Signature", hubSignature);
             var client = new HttpClient();
             var response = await client.PostAsync(subscription.Callback, content);
 

@@ -2,6 +2,7 @@ using System;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using FHIRcastSandbox.Model.Http;
 using FHIRcastSandbox.Model;
 using FHIRcastSandbox.WebSubClient.Rules;
 using Microsoft.AspNetCore.Mvc;
@@ -43,11 +44,7 @@ namespace FHIRcastSandbox.Controllers {
         [HttpPost("notify")]
         public async Task<IActionResult> Post([FromForm] ClientModel model) {
             var httpClient = new HttpClient();
-            var notification = new Notification
-            {
-                Id = Guid.NewGuid().ToString(),
-                Timestamp = DateTime.Now,
-            };
+            var notification = new Notification();
             notification.Event.Context = new[] {
                 new {
                     model.AccessionNumber,
@@ -61,7 +58,8 @@ namespace FHIRcastSandbox.Controllers {
             notification.Event.Topic = model.Topic;
             notification.Event.Event = model.Event;
 
-            var response = await httpClient.PostAsync(model.Topic, new StringContent(JsonConvert.SerializeObject(notification), Encoding.UTF8, "application/json"));
+            var content = notification.CreateHttpContent();
+            var response = await httpClient.PostAsync(model.Topic, content);
 
             response.EnsureSuccessStatusCode();
 

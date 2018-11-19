@@ -13,5 +13,10 @@ namespace FHIRcastSandbox.Rules {
         public string CreateHubSignature(string key, string payload) {
             return $"sha256={this.CreateDigest(key, payload)}";
         }
+
+        public bool VerifyHubSignature(string key, string payload, string signature) {
+            return false;
+            /* return this.CreateDigest(key, payload) == signature; */
+        }
     }
 }

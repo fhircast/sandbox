@@ -113,6 +113,30 @@ namespace FHIRcastSandbox.Model {
         public string Id { get; set; }
         [JsonProperty(PropertyName = "event")]
         public NotificationEvent Event { get; } = new NotificationEvent();
+
+        public Notification() {
+            this.Id = Guid.NewGuid().ToString();
+            this.Timestamp = DateTime.Now;
+        }
+
+        public override bool Equals(object other) {
+            var notification = other as Notification;
+            return notification != null &&
+                this.Timestamp == notification.Timestamp &&
+                this.Id == notification.Id &&
+                this.Event.Topic == notification.Event.Topic &&
+                this.Event.Event == notification.Event.Event;
+
+        }
+
+        public override int GetHashCode() {
+            return new {
+                this.Timestamp,
+                this.Id,
+                this.Event.Topic,
+                this.Event.Event,
+            }.GetHashCode();
+        }
     }
 
     public class NotificationEvent {

@@ -58,18 +58,10 @@ namespace FHIRcastSandbox.WebSubClient.Controllers {
         /// <returns></returns>
         [HttpPost("{subscriptionId}")]
         public async Task<IActionResult> Notification(string subscriptionId, [FromBody] Notification notification) {
-            //If we do not have an active subscription matching the id then return a notfound error
-            var clients = this.clientSubscriptions.GetSubscribedClients(notification);
+            var subscription = this.clientSubscriptions.GetSubscription(subscriptionId);
+            var key = subscription.Secret;
 
-            //var internalModel = new ClientModel()
-            //{
-            //    UserIdentifier = notification.Event.Context[0] == null ? "" : notification.Event.Context[0].ToString(),
-            //    PatientIdentifier = notification.Event.Context[1] == null ? "" : notification.Event.Context[1].ToString(),
-            //    PatientIdIssuer = notification.Event.Context[2] == null ? "" : notification.Event.Context[2].ToString(),
-            //    AccessionNumber = notification.Event.Context[3] == null ? "" : notification.Event.Context[3].ToString(),
-            //    AccessionNumberGroup = notification.Event.Context[4] == null ? "" : notification.Event.Context[4].ToString(),
-            //    StudyId = notification.Event.Context[5] == null ? "" : notification.Event.Context[5].ToString(),
-            //};
+            var clients = this.clientSubscriptions.GetSubscribedClients(notification);
 
             await this.webSubClientHubContext.Clients.Clients(clients)
                 .SendAsync("notification", notification);

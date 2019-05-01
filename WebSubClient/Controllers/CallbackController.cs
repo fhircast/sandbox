@@ -6,7 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 
-namespace FHIRcastSandbox.WebSubClient.Controllers {
+namespace FHIRcastSandbox.WebSubClient.Controllers
+{
     [Route("callback")]
     public class CallbackController : Controller {
         private readonly ClientSubscriptions clientSubscriptions;
@@ -35,19 +36,33 @@ namespace FHIRcastSandbox.WebSubClient.Controllers {
 
             var verificationValidation = this.clientSubscriptions.ValidateVerification(connectionId, hub);
 
-            switch (verificationValidation) {
-                case SubscriptionVerificationValidation.IsPendingVerification:
-                    this.clientSubscriptions.ActivateSubscription(hub.Topic);
-                    break;
-                case SubscriptionVerificationValidation.DoesNotExist:
-                    return this.NotFound();
-                case SubscriptionVerificationValidation.IsAlreadyActive:
-                    break;
-                default:
-                    break;
+            if (hub.Mode == SubscriptionMode.denied)
+            {
+                this.clientSubscriptions.RemoveSubscription(connectionId, hub.Topic);
+                this.webSubClientHubContext.Clients.Clients(connectionId).SendAsync("error", hub.Reason);
+            }
+            else
+            {
+                switch (verificationValidation)
+                {
+                    case SubscriptionVerificationValidation.IsPendingVerification:
+                        this.clientSubscriptions.ActivateSubscription(hub.Topic);
+                        break;
+                    case SubscriptionVerificationValidation.DoesNotExist:
+                        return this.NotFound();
+                    case SubscriptionVerificationValidation.IsAlreadyActive:
+                        break;
+                    default:
+                        break;
+                }
+
+                Subscription sub = this.clientSubscriptions.GetSubscription(connectionId, hub.Topic);
+
+                this.webSubClientHubContext.Clients.Clients(connectionId).SendAsync("subscribed", sub, sub.HubURL.URL);
+                return this.Content(hub.Challenge);
             }
 
-            return this.Content(hub.Challenge);
+            return this.Content("");
         }
 
         /// <summary>
@@ -60,16 +75,6 @@ namespace FHIRcastSandbox.WebSubClient.Controllers {
         public async Task<IActionResult> Notification(string subscriptionId, [FromBody] Notification notification) {
             //If we do not have an active subscription matching the id then return a notfound error
             var clients = this.clientSubscriptions.GetSubscribedClients(notification);
-
-            //var internalModel = new ClientModel()
-            //{
-            //    UserIdentifier = notification.Event.Context[0] == null ? "" : notification.Event.Context[0].ToString(),
-            //    PatientIdentifier = notification.Event.Context[1] == null ? "" : notification.Event.Context[1].ToString(),
-            //    PatientIdIssuer = notification.Event.Context[2] == null ? "" : notification.Event.Context[2].ToString(),
-            //    AccessionNumber = notification.Event.Context[3] == null ? "" : notification.Event.Context[3].ToString(),
-            //    AccessionNumberGroup = notification.Event.Context[4] == null ? "" : notification.Event.Context[4].ToString(),
-            //    StudyId = notification.Event.Context[5] == null ? "" : notification.Event.Context[5].ToString(),
-            //};
 
             await this.webSubClientHubContext.Clients.Clients(clients)
                 .SendAsync("notification", notification);

@@ -2,45 +2,67 @@
 using System.Collections.Concurrent;
 using System.Linq;
 using System;
+using System.Collections.Generic;
 
 namespace FHIRcastSandbox.WebSubClient.Rules {
+    //TODO: Can probably clean up the for loops using lambda expressions, but I couldn't figure it out beyond where it is so have at it
+
     public class ClientSubscriptions {
-        private readonly ConcurrentDictionary<string, (SubscriptionInfo info, Subscription sub)> subscriptions =
-            new ConcurrentDictionary<string, (SubscriptionInfo, Subscription)>();
+        //a connection can have multiple subscriptions so need the inner dictionary as well.
+        private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, (SubscriptionInfo info, Subscription sub)>> subscriptions = 
+            new ConcurrentDictionary<string, ConcurrentDictionary<string, (SubscriptionInfo info, Subscription sub)>>();
 
         public void AddPendingSubscription(string connectionId, Subscription subscription) {
             if (connectionId == null) {
                 throw new ArgumentNullException(nameof(connectionId));
             }
 
-            this.subscriptions.AddOrUpdate(connectionId, (new SubscriptionInfo { Status = SubscriptionStatus.Pending }, subscription), (conId, value) => value);
+            ConcurrentDictionary<string, (SubscriptionInfo info, Subscription sub)> subInfo = new ConcurrentDictionary<string, (SubscriptionInfo info, Subscription sub)>();
+            subInfo.AddOrUpdate(subscription.Topic, (new SubscriptionInfo { Status = SubscriptionStatus.Pending }, subscription), (conId, value) => value);
+
+            
+            this.subscriptions.AddOrUpdate(connectionId, subInfo, (key, oldDict) =>
+            {
+                foreach (KeyValuePair<string, (SubscriptionInfo info, Subscription sub)> kvp in subInfo)
+                {
+                    oldDict.AddOrUpdate(kvp.Key, kvp.Value, (topic, oldVal) => kvp.Value);
+                }
+                return oldDict;
+            });
         }
 
         public void ActivateSubscription(string subscriptionId) {
-            var subscriptionsToActivate = this.subscriptions
-                .Where(x => x.Value.info.Status == SubscriptionStatus.Pending)
-                .Where(x => x.Value.sub.Topic == subscriptionId);
-
-            foreach (var sub in subscriptionsToActivate) {
-                sub.Value.info.Status = SubscriptionStatus.Active;
+            List<(SubscriptionInfo, Subscription)> subs = new List<(SubscriptionInfo, Subscription)>();
+            foreach (KeyValuePair<string, ConcurrentDictionary<string, (SubscriptionInfo info, Subscription sub)>> kvp in this.subscriptions)
+            {
+                subs.AddRange(kvp.Value.Where(x => x.Value.info.Status == SubscriptionStatus.Pending)
+                                        .Where(x => x.Value.sub.Topic == subscriptionId).Select(x => x.Value));
             }
+
+            foreach ((SubscriptionInfo, Subscription) sub in subs)
+            {
+                sub.Item1.Status = SubscriptionStatus.Active;
+            }          
         }
 
         public string[] GetSubscribedClients(Notification notification) {
-            return this.subscriptions
-                .Where(x => x.Value.info.Status == SubscriptionStatus.Active)
-                .Where(x => x.Value.sub.IsInterestedInNotification(notification))
-                .Select(x => x.Key)
-                .ToArray();
+            List<string> clients = new List<string>();
+            foreach (KeyValuePair<string, ConcurrentDictionary<string, (SubscriptionInfo info, Subscription sub)>> kvp in this.subscriptions)
+            {
+                clients.AddRange(kvp.Value.Where(x => x.Value.sub.IsInterestedInNotification(notification)).Select(x => kvp.Key));
+
+                
+            }
+            return clients.ToArray();
         }
 
-        public Subscription GetSubscription(string subscriptionId) {
-            (_, var subscription) = this.GetExistingSubscription(subscriptionId);
+        public Subscription GetSubscription(string subscriptionId, string topic) {
+            (_, var subscription) = this.GetExistingSubscription(subscriptionId, topic);
             return subscription;
         }
 
         public SubscriptionVerificationValidation ValidateVerification(string clientConnectionId, SubscriptionVerification verification) {
-            var existingSubscription = this.GetExistingSubscription(clientConnectionId);
+            var existingSubscription = this.GetExistingSubscription(clientConnectionId, verification.Topic);
 
             if (existingSubscription.Equals(default((SubscriptionInfo, Subscription)))) {
                 return SubscriptionVerificationValidation.DoesNotExist;
@@ -55,8 +77,13 @@ namespace FHIRcastSandbox.WebSubClient.Rules {
             this.subscriptions.TryRemove(clientConnectionId, out _);
         }
 
-        private (SubscriptionInfo info, Subscription subscription) GetExistingSubscription(string clientConnectionId) {
-            return this.subscriptions[clientConnectionId];
+        public void RemoveSubscription(string clientConnectionId, string topic)
+        {
+            this.subscriptions[clientConnectionId].TryRemove(topic, out _);
+        }
+
+        private (SubscriptionInfo info, Subscription subscription) GetExistingSubscription(string clientConnectionId, string topic) {
+            return this.subscriptions[clientConnectionId][topic];
         }
     }
 

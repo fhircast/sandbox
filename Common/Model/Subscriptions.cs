@@ -54,7 +54,7 @@ namespace FHIRcastSandbox.Model {
         public string Secret { get; set; }
 
         [BindNever, JsonIgnore]
-        public string HubURL { get; set; }
+        public HubURL HubURL { get; set; }
 
         public static Subscription CreateNewSubscription(string subscriptionUrl, string topic, string[] events, string callback) {
             var rngCsp = new RNGCryptoServiceProvider();
@@ -70,7 +70,7 @@ namespace FHIRcastSandbox.Model {
                 LeaseSeconds = 3600,
                 Topic = topic
             };
-            subscription.HubURL = subscriptionUrl;
+            subscription.HubURL = new HubURL() { URL = subscriptionUrl };
 
             return subscription;
         }
@@ -89,11 +89,15 @@ namespace FHIRcastSandbox.Model {
     public class SubscriptionVerification : SubscriptionWithLease {
         [URLNameOverride("hub.challenge")]
         public string Challenge { get; set; }
+
+        [URLNameOverride("hub.reason")]
+        public string Reason { get; set; }
     }
 
     public enum SubscriptionMode {
         subscribe,
         unsubscribe,
+        denied,
     }
 
     public class SubscriptionComparer : IEqualityComparer<Subscription> {
@@ -134,5 +138,12 @@ namespace FHIRcastSandbox.Model {
         }
 
         public string Value { get; set; }
+    }
+
+    public class HubURL : ModelBase
+    {
+        public string URL { get; set; }
+
+        public string[] HTTPHeaders { get; set; }
     }
 }

@@ -23,7 +23,7 @@ namespace FHIRcastSandbox.Hubs {
             this.hubSubscriptions = hubSubscriptions ?? throw new ArgumentNullException(nameof(hubSubscriptions));
         }
 
-        public async Task Subscribe(string subscriptionUrl, string topic, string events) {
+        public async Task Subscribe(string subscriptionUrl, string topic, string events, string[] httpHeaders) {
             if (string.IsNullOrEmpty(subscriptionUrl)) {
                 subscriptionUrl = new UriBuilder("http", "localhost", 5000, "/api/hub").Uri.ToString();
             }
@@ -48,7 +48,7 @@ namespace FHIRcastSandbox.Hubs {
                 Secret = secret,
                 LeaseSeconds = 3600,
                 Topic = topic,
-                HubURL = subscriptionUrl,
+                HubURL = new HubURL() { URL = subscriptionUrl, HTTPHeaders = httpHeaders }
             };
 
             // First adding to pending and then sending the subscription to
@@ -63,14 +63,14 @@ namespace FHIRcastSandbox.Hubs {
             }
         }
 
-        public async Task Unsubscribe() {
+        public async Task Unsubscribe(string topic) {
             var clientConnectionId = this.Context.ConnectionId;
             this.logger.LogDebug($"Unsubscribing subscription {clientConnectionId}");
-            Subscription sub = this.clientSubscriptions.GetSubscription(clientConnectionId);
+            Subscription sub = this.clientSubscriptions.GetSubscription(clientConnectionId, topic);
             sub.Mode = SubscriptionMode.unsubscribe;
 
             await this.hubSubscriptions.Unsubscribe(sub);
-            this.clientSubscriptions.RemoveSubscription(clientConnectionId);
+            this.clientSubscriptions.RemoveSubscription(clientConnectionId, topic);
 
         }
     }

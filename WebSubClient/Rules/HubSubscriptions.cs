@@ -27,21 +27,38 @@ namespace FHIRcastSandbox.WebSubClient.Rules {
 
             this.logger.LogDebug($"Posting async to {subscription.HubURL}: {content}");
 
-            var result = await new HttpClient().PostAsync(subscription.HubURL, httpcontent);
+            HttpClient client = new HttpClient();
+            foreach (string header in subscription.HubURL.HTTPHeaders)
+            {
+                string[] split = header.Split(":");
+                client.DefaultRequestHeaders.Add(split[0], split[1]);
+            }
+            var result = await client.PostAsync(subscription.HubURL.URL, httpcontent);
         }
 
         public async Task Unsubscribe(Subscription subscription) {
-            var httpClient = new HttpClient();
-            var result = await httpClient.PostAsync(subscription.HubURL,
-                new StringContent(
-                    $"hub.callback={subscription.Callback}" +
+
+            string content = $"hub.callback={subscription.Callback}" +
                     $"&hub.mode={subscription.Mode}" +
                     $"&hub.topic={subscription.Topic}" +
                     $"&hub.secret={subscription.Secret}" +
                     $"&hub.events={string.Join(",", subscription.Events)}" +
-                    $"&hub.lease_seconds={subscription.LeaseSeconds}",
+                    $"&hub.lease_seconds={subscription.LeaseSeconds}";
+
+            StringContent httpContent = new StringContent(
+                    content,
                     Encoding.UTF8,
-                    "application/x-www-form-urlencoded"));
+                    "application/x-www-form-urlencoded");
+
+            this.logger.LogDebug($"Posting async to {subscription.HubURL}: {content}");
+
+            var client = new HttpClient();
+            foreach (string header in subscription.HubURL.HTTPHeaders)
+            {
+                string[] split = header.Split(":");
+                client.DefaultRequestHeaders.Add(split[0], split[1]);
+            }
+            var result = await client.PostAsync(subscription.HubURL.URL, httpContent);
 
             result.EnsureSuccessStatusCode();
         }

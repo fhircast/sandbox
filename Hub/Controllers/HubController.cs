@@ -14,12 +14,14 @@ namespace FHIRcastSandbox.Controllers {
         private readonly IBackgroundJobClient backgroundJobClient;
         private readonly ISubscriptions subscriptions;
         private readonly INotifications notifications;
+        private readonly IDictionary<string, object> contexts;
 
-        public HubController(ILogger<HubController> logger, IBackgroundJobClient backgroundJobClient, ISubscriptions subscriptions, INotifications notifications) {
+        public HubController(ILogger<HubController> logger, IBackgroundJobClient backgroundJobClient, ISubscriptions subscriptions, INotifications notifications, IDictionary<string,object> contexts) {
             this.backgroundJobClient = backgroundJobClient ?? throw new ArgumentNullException(nameof(backgroundJobClient));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.subscriptions = subscriptions ?? throw new ArgumentNullException(nameof(subscriptions));
             this.notifications = notifications ?? throw new ArgumentNullException(nameof(notifications));
+            this.contexts = contexts ?? throw new ArgumentNullException(nameof(contexts));
         }
 
         /// <summary>
@@ -58,40 +60,46 @@ namespace FHIRcastSandbox.Controllers {
         public IEnumerable<Subscription> GetSubscriptions() {
             return this.subscriptions.GetActiveSubscriptions();
         }
-
         [Route("{sessionId}")]
         [HttpPost]
-        public async Task<IActionResult> Notify(string sessionId, [FromBody] Notification notification) {
+        public async Task<IActionResult> Notify(string sessionId, [FromBody] Notification notification)
+        {
             this.logger.LogInformation($"Got notification from client: {notification}");
 
             var subscriptions = this.subscriptions.GetSubscriptions(notification.Event.Topic, notification.Event.Event);
             this.logger.LogDebug($"Found {subscriptions.Count} subscriptions matching client event");
 
-            if (subscriptions.Count == 0) {
+            if (subscriptions.Count == 0)
+            {
                 return this.NotFound($"Could not find any subscriptions for sessionId {sessionId}.");
             }
 
-            //var notification = new Notification
-            //{
-            //    Timestamp = DateTime.UtcNow,
-            //    Id = Guid.NewGuid().ToString("n"),
-            //};
-            //notification.Event.Topic = notification.Topic;
-            //notification.Event.Event = notification.Event;
-            //notification.Event.Context = new object[] {
-            //    notification.UserIdentifier,
-            //    notification.PatientIdentifier,
-            //    notification.PatientIdIssuer,
-            //    notification.AccessionNumber,
-            //    notification.AccessionNumberGroup,
-            //    notification.StudyId,
-            //};
+            contexts[sessionId] = notification.Event.Context;
 
-            foreach (var sub in subscriptions) {
+
+            foreach (var sub in subscriptions)
+            {
                 await this.notifications.SendNotification(notification, sub);
             }
 
             return this.Ok();
+        }
+
+        [Route("{topicId}")]
+        [HttpGet]
+        public object GetCurrentcontext(string topicId) {
+            this.logger.LogInformation($"Got context request from for : {topicId}");
+
+            object context;
+
+            if (this.contexts.TryGetValue(topicId, out context)){
+                return context;
+            }
+            else
+            {
+                return this.NotFound();
+            }
+
         }
     }
 }

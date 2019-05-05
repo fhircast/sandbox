@@ -41,7 +41,7 @@ namespace FHIRcastSandbox.Model {
     }
 
     public abstract class SubscriptionWithLease : SubscriptionBase {
-        [URLNameOverride("hub.lease_seconds")]
+        [URLNameOverride("hub.leaseseconds")]
         public int? LeaseSeconds { get; set; }
 
         [BindNever, JsonIgnore]

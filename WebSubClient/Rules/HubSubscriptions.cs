@@ -18,7 +18,7 @@ namespace FHIRcastSandbox.WebSubClient.Rules {
                                 $"&hub.topic={subscription.Topic}" +
                                 $"&hub.secret={subscription.Secret}" +
                                 $"&hub.events={string.Join(",", subscription.Events)}" +
-                                $"&hub.lease_seconds={subscription.LeaseSeconds}";
+                                $"&hub.leaseseconds={subscription.LeaseSeconds}";
 
             StringContent httpcontent = new StringContent(
                     content,
@@ -43,7 +43,7 @@ namespace FHIRcastSandbox.WebSubClient.Rules {
                     $"&hub.topic={subscription.Topic}" +
                     $"&hub.secret={subscription.Secret}" +
                     $"&hub.events={string.Join(",", subscription.Events)}" +
-                    $"&hub.lease_seconds={subscription.LeaseSeconds}";
+                    $"&hub.leaseseconds={subscription.LeaseSeconds}";
 
             StringContent httpContent = new StringContent(
                     content,

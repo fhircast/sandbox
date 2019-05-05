@@ -63,15 +63,12 @@ namespace FHIRcastSandbox.Controllers {
 
             var interestedClients = this.clientSubscriptions.GetSubscribedClients(notification);
 
-            foreach(var subscriptionId in interestedClients)
+            foreach (var subscriptionId in interestedClients)
             {
                 var hubURL = this.clientSubscriptions.GetSubscription(subscriptionId, model.Topic).HubURL;
-                var response = await httpClient.PostAsync(hubURL.URL, new StringContent(JsonConvert.SerializeObject(notification), Encoding.UTF8, "application/json"));
+                var response = await httpClient.PostAsync($"{hubURL.URL}/{model.Topic}", new StringContent(JsonConvert.SerializeObject(notification), Encoding.UTF8, "application/json"));
                 response.EnsureSuccessStatusCode();
             }
-
-
-
 
             return this.View("WebSubClient", model);
         }

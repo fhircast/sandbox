@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Net.Http;
 
 namespace FHIRcastSandbox {
     public class Startup {
@@ -25,8 +26,8 @@ namespace FHIRcastSandbox {
                 .UseMemoryStorage());
             services.AddTransient<ISubscriptionValidator, SubscriptionValidator>();
             services.AddSingleton<ISubscriptions, Subscriptions>();
-            services.AddSingleton<INotifications, Notifications>();
-            services.AddSingleton<IDictionary, Dictionary<string,object>>();
+            services.AddSingleton<INotifications<HttpResponseMessage>, Notifications<HttpResponseMessage>>();
+            services.AddSingleton<IContexts, Contexts>();
             services.AddTransient<IBackgroundJobClient, BackgroundJobClient>();
             services.AddTransient<ValidateSubscriptionJob>();
         }

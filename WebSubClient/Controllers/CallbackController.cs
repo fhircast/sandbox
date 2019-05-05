@@ -52,6 +52,9 @@ namespace FHIRcastSandbox.WebSubClient.Controllers
                         return this.NotFound();
                     case SubscriptionVerificationValidation.IsAlreadyActive:
                         break;
+                    case SubscriptionVerificationValidation.IsPendingDeletion:
+                        this.clientSubscriptions.RemoveSubscription(connectionId, hub.Topic);
+                        return this.Content(hub.Challenge);
                     default:
                         break;
                 }

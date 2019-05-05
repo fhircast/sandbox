@@ -16,17 +16,25 @@ namespace FHIRcastSandbox.Rules {
         }
 
         public async Task Run(Subscription subscription, bool simulateCancellation) {
-            if (subscription.Mode == SubscriptionMode.subscribe) {
-                HubValidationOutcome validationOutcome = simulateCancellation ? HubValidationOutcome.Canceled : HubValidationOutcome.Valid;
-                var validationResult = await this.validator.ValidateSubscription(subscription, validationOutcome);
-                if (validationResult == ClientValidationOutcome.Verified) {
+            HubValidationOutcome validationOutcome = simulateCancellation ? HubValidationOutcome.Canceled : HubValidationOutcome.Valid;
+            var validationResult = await this.validator.ValidateSubscription(subscription, validationOutcome);
+            if (validationResult == ClientValidationOutcome.Verified)
+            {
+                if (subscription.Mode == SubscriptionMode.subscribe)
+                {
                     this.logger.LogInformation($"Adding verified subscription: {subscription}.");
                     this.subscriptions.AddSubscription(subscription);
-                } else {
-                    this.logger.LogInformation($"Not adding unverified subscription: {subscription}.");
                 }
-            } else if (subscription.Mode == SubscriptionMode.unsubscribe) {
-                this.subscriptions.RemoveSubscription(subscription);
+                else if (subscription.Mode == SubscriptionMode.unsubscribe)
+                {
+                    this.logger.LogInformation($"Removing verified subscription: {subscription}.");
+                    this.subscriptions.RemoveSubscription(subscription);
+                }
+            }
+            else
+            {
+                var addingOrRemoving = subscription.Mode == SubscriptionMode.subscribe ? "adding" : "removing";
+                this.logger.LogInformation($"Not {addingOrRemoving} unverified subscription: {subscription}.");
             }
         }
     }

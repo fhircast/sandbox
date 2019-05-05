@@ -6,14 +6,14 @@ using System.Threading.Tasks;
 using System;
 
 namespace FHIRcastSandbox.Rules {
-    public class Notifications : INotifications {
-        private ILogger<Notifications> logger;
+    public class Notifications<T> : INotifications<HttpResponseMessage> {
+        private ILogger<Notifications<HttpResponseMessage>> logger;
 
-        public Notifications(ILogger<Notifications> logger) {
+        public Notifications(ILogger<Notifications<HttpResponseMessage>> logger) {
             this.logger = logger;
         }
 
-        public async Task SendNotification(Notification notification, Subscription subscription) {
+        public async Task<HttpResponseMessage> SendNotification(Notification notification, Subscription subscription) {
             this.logger.LogInformation($"Sending notification {notification} to callback {subscription.Callback}");
 
             var str = Newtonsoft.Json.JsonConvert.SerializeObject(notification);
@@ -23,6 +23,8 @@ namespace FHIRcastSandbox.Rules {
             var response = await client.PostAsync(subscription.Callback, content);
 
             this.logger.LogDebug($"Got response from posting notification:{Environment.NewLine}{response}{Environment.NewLine}{await response.Content.ReadAsStringAsync()}.");
+
+            return response;
         }
     }
 }

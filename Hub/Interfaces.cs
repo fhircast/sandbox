@@ -16,7 +16,12 @@ namespace FHIRcastSandbox {
         ICollection<Subscription> GetSubscriptions(string topic, string notificationEvent);
     }
 
-    public interface INotifications {
-        Task SendNotification(Notification notification, Subscription subscription);
+    public interface INotifications<T> {
+        Task<T> SendNotification(Notification notification, Subscription subscription);
+    }
+    public interface IContexts
+    {
+        void setContext(string topic, object context);
+        object getContext(string topic);
     }
 }

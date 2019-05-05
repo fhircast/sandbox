@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Threading.Tasks;
 using FHIRcastSandbox.Model;
 using FHIRcastSandbox.Rules;
@@ -13,13 +14,15 @@ namespace FHIRcastSandbox.Controllers {
         private readonly ILogger<HubController> logger;
         private readonly IBackgroundJobClient backgroundJobClient;
         private readonly ISubscriptions subscriptions;
-        private readonly INotifications notifications;
+        private readonly INotifications<HttpResponseMessage> notifications;
+        private readonly IContexts contexts;
 
-        public HubController(ILogger<HubController> logger, IBackgroundJobClient backgroundJobClient, ISubscriptions subscriptions, INotifications notifications) {
+        public HubController(ILogger<HubController> logger, IBackgroundJobClient backgroundJobClient, ISubscriptions subscriptions, INotifications<HttpResponseMessage> notifications, IContexts contexts) {
             this.backgroundJobClient = backgroundJobClient ?? throw new ArgumentNullException(nameof(backgroundJobClient));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.subscriptions = subscriptions ?? throw new ArgumentNullException(nameof(subscriptions));
             this.notifications = notifications ?? throw new ArgumentNullException(nameof(notifications));
+            this.contexts = contexts ?? throw new ArgumentNullException(nameof(contexts));
         }
 
         /// <summary>
@@ -59,39 +62,54 @@ namespace FHIRcastSandbox.Controllers {
             return this.subscriptions.GetActiveSubscriptions();
         }
 
-        [Route("{sessionId}")]
+        /// <summary>
+        /// Sets a context for a certain topic.
+        /// </summary>
+        /// <returns></returns>
+        [Route("{topicId}")]
         [HttpPost]
-        public async Task<IActionResult> Notify(string sessionId, [FromBody] Notification notification) {
+        public async Task<IActionResult> Notify(string topicId, [FromBody] Notification notification)
+        {
             this.logger.LogInformation($"Got notification from client: {notification}");
 
             var subscriptions = this.subscriptions.GetSubscriptions(notification.Event.Topic, notification.Event.Event);
             this.logger.LogDebug($"Found {subscriptions.Count} subscriptions matching client event");
 
-            if (subscriptions.Count == 0) {
-                return this.NotFound($"Could not find any subscriptions for sessionId {sessionId}.");
+            if (subscriptions.Count == 0)
+            {
+                return this.NotFound($"Could not find any subscriptions for sessionId {topicId}.");
             }
 
-            //var notification = new Notification
-            //{
-            //    Timestamp = DateTime.UtcNow,
-            //    Id = Guid.NewGuid().ToString("n"),
-            //};
-            //notification.Event.Topic = notification.Topic;
-            //notification.Event.Event = notification.Event;
-            //notification.Event.Context = new object[] {
-            //    notification.UserIdentifier,
-            //    notification.PatientIdentifier,
-            //    notification.PatientIdIssuer,
-            //    notification.AccessionNumber,
-            //    notification.AccessionNumberGroup,
-            //    notification.StudyId,
-            //};
+            contexts.setContext(topicId, notification.Event.Context);
 
-            foreach (var sub in subscriptions) {
-                await this.notifications.SendNotification(notification, sub);
+            var success = true;
+            foreach (var sub in subscriptions)
+            {
+                success |= (await this.notifications.SendNotification(notification, sub)).IsSuccessStatusCode;
             }
-
+            if (!success)
+            {
+                // TODO: return reason for failure
+                this.Forbid();
+            }
             return this.Ok();
+        }
+
+        [Route("{topicId}")]
+        [HttpGet]
+        public object GetCurrentcontext(string topicId) {
+            this.logger.LogInformation($"Got context request from for : {topicId}");
+
+            var context = contexts.getContext(topicId);
+
+            if (context != null){
+                return context;
+            }
+            else
+            {
+                return this.NotFound();
+            }
+
         }
     }
 }

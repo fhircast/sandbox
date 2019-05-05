@@ -48,7 +48,7 @@ namespace FHIRcastSandbox.Controllers {
                 return this.BadRequest(this.ModelState);
             }
 
-            this.backgroundJobClient.Enqueue<ValidateSubscriptionJob>(job => job.Run(hub, _cancel));
+            var jobId = this.backgroundJobClient.Enqueue<ValidateSubscriptionJob>(job => job.Run(hub, _cancel));
 
             return this.Accepted();
         }

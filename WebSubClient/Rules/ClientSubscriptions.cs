@@ -19,7 +19,7 @@ namespace FHIRcastSandbox.WebSubClient.Rules {
 
             ConcurrentDictionary<string, (SubscriptionInfo info, Subscription sub)> subInfo = new ConcurrentDictionary<string, (SubscriptionInfo info, Subscription sub)>();
             subInfo.AddOrUpdate(subscription.Topic, (new SubscriptionInfo { Status = SubscriptionStatus.Pending }, subscription), (conId, value) => value);
-
+            
             
             this.subscriptions.AddOrUpdate(connectionId, subInfo, (key, oldDict) =>
             {
@@ -70,7 +70,18 @@ namespace FHIRcastSandbox.WebSubClient.Rules {
             if (existingSubscription.info.Status == SubscriptionStatus.Active) {
                 return SubscriptionVerificationValidation.IsAlreadyActive;
             }
+            if (existingSubscription.info.Status == SubscriptionStatus.DeletionPending)
+            {
+                return SubscriptionVerificationValidation.IsPendingDeletion;
+            }
+
             return SubscriptionVerificationValidation.IsPendingVerification;
+        }
+
+        internal void PendingRemovalSubscription(string clientConnectionId, string topic)
+        {
+            var existingSubscription = GetExistingSubscription(clientConnectionId, topic);
+            existingSubscription.info.Status = SubscriptionStatus.DeletionPending;
         }
 
         public void RemoveSubscription(string clientConnectionId) {
@@ -91,7 +102,11 @@ namespace FHIRcastSandbox.WebSubClient.Rules {
         public SubscriptionStatus Status { get; set; }
     }
 
-    public enum SubscriptionStatus { Pending, Active }
+    public enum SubscriptionStatus { Pending, Active,
+        DeletionPending
+    }
 
-    public enum SubscriptionVerificationValidation { IsPendingVerification, DoesNotExist, IsAlreadyActive }
+    public enum SubscriptionVerificationValidation { IsPendingVerification, DoesNotExist, IsAlreadyActive,
+        IsPendingDeletion
+    }
 }

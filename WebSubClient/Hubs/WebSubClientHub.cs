@@ -25,7 +25,7 @@ namespace FHIRcastSandbox.Hubs {
 
         public async Task Subscribe(string subscriptionUrl, string topic, string events, string[] httpHeaders) {
             if (string.IsNullOrEmpty(subscriptionUrl)) {
-                subscriptionUrl = new UriBuilder("http", "localhost", 5000, "/api/hub").Uri.ToString();
+                subscriptionUrl = new UriBuilder("http", "hub", 80, "/api/hub").Uri.ToString();
             }
 
             var connectionId = this.Context.ConnectionId;
@@ -36,8 +36,8 @@ namespace FHIRcastSandbox.Hubs {
             var secret = Convert.ToBase64String(buffer);
             var callbackUri = new UriBuilder(
                 "http",
-                "localhost",
-                5001,
+                "client",
+                80,
                 $"/callback/{connectionId}");
 
             var subscription = new Subscription()

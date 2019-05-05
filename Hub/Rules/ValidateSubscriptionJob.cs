@@ -15,7 +15,7 @@ namespace FHIRcastSandbox.Rules {
             this.logger = logger;
         }
 
-        public async Task<Boolean> Run(Subscription subscription, bool simulateCancellation) {
+        public async Task Run(Subscription subscription, bool simulateCancellation) {
             HubValidationOutcome validationOutcome = simulateCancellation ? HubValidationOutcome.Canceled : HubValidationOutcome.Valid;
             var validationResult = await this.validator.ValidateSubscription(subscription, validationOutcome);
             if (validationResult == ClientValidationOutcome.Verified)
@@ -24,23 +24,18 @@ namespace FHIRcastSandbox.Rules {
                 {
                     this.logger.LogInformation($"Adding verified subscription: {subscription}.");
                     this.subscriptions.AddSubscription(subscription);
-                    return true;
                 }
                 else if (subscription.Mode == SubscriptionMode.unsubscribe)
                 {
                     this.logger.LogInformation($"Removing verified subscription: {subscription}.");
                     this.subscriptions.RemoveSubscription(subscription);
-                    return true;
                 }
             }
             else
             {
                 var addingOrRemoving = subscription.Mode == SubscriptionMode.subscribe ? "adding" : "removing";
                 this.logger.LogInformation($"Not {addingOrRemoving} unverified subscription: {subscription}.");
-                return false;
             }
-
-            return false;
         }
     }
 }

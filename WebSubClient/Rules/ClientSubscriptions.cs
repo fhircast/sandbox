@@ -20,7 +20,6 @@ namespace FHIRcastSandbox.WebSubClient.Rules {
             ConcurrentDictionary<string, (SubscriptionInfo info, Subscription sub)> subInfo = new ConcurrentDictionary<string, (SubscriptionInfo info, Subscription sub)>();
             subInfo.AddOrUpdate(subscription.Topic, (new SubscriptionInfo { Status = SubscriptionStatus.Pending }, subscription), (conId, value) => value);
             
-            
             this.subscriptions.AddOrUpdate(connectionId, subInfo, (key, oldDict) =>
             {
                 foreach (KeyValuePair<string, (SubscriptionInfo info, Subscription sub)> kvp in subInfo)

@@ -59,9 +59,7 @@ namespace FHIRcastSandbox.WebSubClient.Controllers
                         break;
                 }
 
-                Subscription sub = this.clientSubscriptions.GetSubscription(connectionId, hub.Topic);
-
-                this.webSubClientHubContext.Clients.Clients(connectionId).SendAsync("subscribed", sub, sub.HubURL.URL);
+                this.webSubClientHubContext.Clients.Clients(connectionId).SendAsync("updatedSubscriptions", this.clientSubscriptions.GetClientSubscriptions(connectionId));
                 return this.Content(hub.Challenge);
             }
 

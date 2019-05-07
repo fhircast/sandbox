@@ -69,8 +69,8 @@ namespace FHIRcastSandbox.Hubs {
             Subscription sub = this.clientSubscriptions.GetSubscription(clientConnectionId, topic);
             sub.Mode = SubscriptionMode.unsubscribe;
 
+            this.clientSubscriptions.PendingRemovalSubscription(clientConnectionId, topic);
             await this.hubSubscriptions.Unsubscribe(sub);
-            this.clientSubscriptions.RemoveSubscription(clientConnectionId, topic);
 
         }
     }

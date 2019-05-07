@@ -42,10 +42,10 @@ namespace FHIRcastSandbox.Model {
 
     public abstract class SubscriptionWithLease : SubscriptionBase {
         [URLNameOverride("hub.lease_seconds")]
-        public int? LeaseSeconds { get; set; }
+        public int? Lease_Seconds { get; set; }
 
         [BindNever, JsonIgnore]
-        public TimeSpan? Lease => this.LeaseSeconds.HasValue ? TimeSpan.FromSeconds(this.LeaseSeconds.Value) : (TimeSpan?)null;
+        public TimeSpan? Lease => this.Lease_Seconds.HasValue ? TimeSpan.FromSeconds(this.Lease_Seconds.Value) : (TimeSpan?)null;
     }
 
     public class Subscription : SubscriptionWithLease {
@@ -56,7 +56,7 @@ namespace FHIRcastSandbox.Model {
         [BindNever, JsonIgnore]
         public HubURL HubURL { get; set; }
 
-        public static Subscription CreateNewSubscription(string subscriptionUrl, string topic, string[] events, string callback) {
+        public static Subscription CreateNewSubscription(string subscriptionUrl, string topic, string[] events, string callback, int leaseSeconds = 3600) {
             var rngCsp = new RNGCryptoServiceProvider();
             var buffer = new byte[32];
             rngCsp.GetBytes(buffer);
@@ -67,7 +67,7 @@ namespace FHIRcastSandbox.Model {
                 Events = events,
                 Mode = SubscriptionMode.subscribe,
                 Secret = secret,
-                LeaseSeconds = 3600,
+                Lease_Seconds = leaseSeconds,
                 Topic = topic
             };
             subscription.HubURL = new HubURL() { URL = subscriptionUrl };

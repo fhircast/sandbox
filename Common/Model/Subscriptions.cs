@@ -8,7 +8,8 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace FHIRcastSandbox.Model {
+namespace FHIRcastSandbox.Model
+{
 
 
     public class Subscription
@@ -77,9 +78,30 @@ namespace FHIRcastSandbox.Model {
 
             return true;
         }
+
+        public static Subscription CreateNewSubscription(string subscriptionUrl, string topic, string[] events, string callback)
+        {	        /// <summary>
+            var rngCsp = new RNGCryptoServiceProvider();	        /// Gets a subscriber-unique ID of this subscription.
+            var buffer = new byte[32];	        /// </summary>
+            rngCsp.GetBytes(buffer);	        /// <returns>An ID that is unique to the subscriber creating the subscription.</returns>
+            var secret = BitConverter.ToString(buffer).Replace("-", "");
+            var subscription = new Subscription()
+            {
+                Callback = callback,
+                Events = events,
+                Mode = SubscriptionMode.subscribe,
+                Secret = secret,
+                LeaseSeconds = 3600,
+                Topic = topic
+            };
+            subscription.HubURL = new HubURL() { URL = subscriptionUrl };
+
+            return subscription;
+        }
     }
 
-    public enum SubscriptionMode {
+    public enum SubscriptionMode
+    {
         subscribe,
         unsubscribe,
         denied,
@@ -98,7 +120,8 @@ namespace FHIRcastSandbox.Model {
         }
     }
 
-    public class Notification : ModelBase {
+    public class Notification : ModelBase
+    {
         [JsonProperty(PropertyName = "timestamp")]
         public DateTime Timestamp { get; set; }
         [JsonProperty(PropertyName = "id")]
@@ -107,7 +130,8 @@ namespace FHIRcastSandbox.Model {
         public NotificationEvent Event { get; } = new NotificationEvent();
     }
 
-    public class NotificationEvent {
+    public class NotificationEvent
+    {
         [ModelBinder(Name = "hub.topic")]
         [JsonProperty(PropertyName = "hub.topic")]
         public string Topic { get; set; }
@@ -120,8 +144,10 @@ namespace FHIRcastSandbox.Model {
         public object[] Context { get; set; }
     }
 
-    public class URLNameOverride : Attribute {
-        public URLNameOverride(string value) {
+    public class URLNameOverride : Attribute
+    {
+        public URLNameOverride(string value)
+        {
             this.Value = value;
         }
 

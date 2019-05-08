@@ -4,6 +4,10 @@ const connection = new signalR.HubConnectionBuilder()
     .configureLogging(signalR.LogLevel.Information)
     .build();
 
+connection
+    .start()
+    .catch(err => console.error(err.toString()));
+
 connection.on("notification", (message) => {
     console.debug(message);
 
@@ -21,19 +25,43 @@ connection.on("notification", (message) => {
     }
 });
 
-connection.on("subscribed", (subscription, hubURL) => {
-    console.debug(subscription);
-    console.debug("HubURL: " + hubURL);
+connection.on("error", (errorMsg) => {
+    alert("Error on server: /n" + errorMsg);
+});
 
-    var myTable = document.getElementById("clientSubTable");
-    var newRow = myTable.insertRow(myTable.rows.length);
+connection.on("updatedSubscriptions", (subscriptions) => {
+    console.debug("updated subscriptions called with " + subscriptions);
+    var subTable = getSubscriptionTable().getElementsByTagName('tbody')[0];
+    subTable.innerHTML = "";
+
+    for (var i = 0; i < subscriptions.length; i++) {
+        console.debug(subscriptions[i]);
+        addSubscriptionToTable(subTable, subscriptions[i]);
+    }
+});
+
+function getSubscriptionTable() {
+    return document.getElementById("clientSubTable");
+}
+
+function unsubscribe(topic) {
+    console.debug("unsubscribing from " + topic);
+
+    connection
+        .invoke(
+            "unsubscribe", topic)
+        .catch(e => console.error(e));
+}
+
+function addSubscriptionToTable(table, subscription) {
+    var newRow = table.insertRow(table.rows.length);
 
     var urlCell = newRow.insertCell(0);
     var topicCell = newRow.insertCell(1);
     var eventCell = newRow.insertCell(2);
     var unsubscribeCell = newRow.insertCell(3);
 
-    var urlText = document.createTextNode(hubURL);
+    var urlText = document.createTextNode(subscription.hubURL.url);
     var topicText = document.createTextNode(subscription.topic);
     var eventsText = document.createTextNode(subscription.events.join(","));
     var unsubscribeBtn = document.createElement('input');
@@ -51,23 +79,6 @@ connection.on("subscribed", (subscription, hubURL) => {
     topicCell.appendChild(topicText);
     eventCell.appendChild(eventsText);
     unsubscribeCell.appendChild(unsubscribeBtn);
-});
-
-connection.on("error", (errorMsg) => {
-    alert("Error on server: " + errorMsg);
-});
-
-connection
-    .start()
-    .catch(err => console.error(err.toString()));
-
-function unsubscribe(topic) {
-    console.debug("unsubscribing from " + topic);
-
-    connection
-        .invoke(
-            "unsubscribe", topic)
-        .catch(e => console.error(e));
 }
 
 function addHttpHeader() {

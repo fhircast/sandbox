@@ -44,6 +44,17 @@ namespace FHIRcastSandbox.WebSubClient.Rules {
             }          
         }
 
+        public SubscriptionWithHubURL[] GetClientSubscriptions(string connectionID)
+        {
+            ConcurrentDictionary<string, (SubscriptionInfo info, Subscription sub)> subs;
+            if (!this.subscriptions.TryGetValue(connectionID, out subs))
+            {
+                //Throw error
+            }
+
+            return subs.Values.Select(x => new SubscriptionWithHubURL(x.sub)).ToArray();
+        }
+
         public string[] GetSubscribedClients(Notification notification) {
             List<string> clients = new List<string>();
             foreach (KeyValuePair<string, ConcurrentDictionary<string, (SubscriptionInfo info, Subscription sub)>> kvp in this.subscriptions)
@@ -101,11 +112,18 @@ namespace FHIRcastSandbox.WebSubClient.Rules {
         public SubscriptionStatus Status { get; set; }
     }
 
-    public enum SubscriptionStatus { Pending, Active,
+    public enum SubscriptionStatus
+    {
+        Pending,
+        Active,
         DeletionPending
     }
 
-    public enum SubscriptionVerificationValidation { IsPendingVerification, DoesNotExist, IsAlreadyActive,
+    public enum SubscriptionVerificationValidation
+    {
+        IsPendingVerification,
+        DoesNotExist,
+        IsAlreadyActive,
         IsPendingDeletion
     }
 }

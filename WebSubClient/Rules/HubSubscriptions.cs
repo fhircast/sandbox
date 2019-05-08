@@ -4,14 +4,18 @@ using System.Threading.Tasks;
 using FHIRcastSandbox.Model;
 using Microsoft.Extensions.Logging;
 
-namespace FHIRcastSandbox.WebSubClient.Rules {
-    public class HubSubscriptions : IHubSubscriptions {
+namespace FHIRcastSandbox.WebSubClient.Rules
+{
+    public class HubSubscriptions : IHubSubscriptions
+    {
         private readonly ILogger<HubSubscriptions> logger;
-        public HubSubscriptions(ILogger<HubSubscriptions> logger) {
+        public HubSubscriptions(ILogger<HubSubscriptions> logger)
+        {
             this.logger = logger;
         }
 
-        public async Task SubscribeAsync(Subscription subscription) {
+        public async Task SubscribeAsync(Subscription subscription)
+        {
 
             string content = $"hub.callback={subscription.Callback}" +
                                 $"&hub.mode={subscription.Mode}" +
@@ -36,7 +40,8 @@ namespace FHIRcastSandbox.WebSubClient.Rules {
             var result = await client.PostAsync(subscription.HubURL.URL, httpcontent);
         }
 
-        public async Task Unsubscribe(Subscription subscription) {
+        public async Task Unsubscribe(Subscription subscription)
+        {
 
             string content = $"hub.callback={subscription.Callback}" +
                     $"&hub.mode={subscription.Mode}" +

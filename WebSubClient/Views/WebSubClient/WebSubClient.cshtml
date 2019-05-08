@@ -93,18 +93,6 @@
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        @if (Model.ActiveSubscriptions != null)
-                                                        {
-                                                            @foreach (var item in Model.ActiveSubscriptions)
-                                                            {
-                                                                <tr>
-                                                                    <td>@item.HubURL</td>
-                                                                    <td>@item.Topic</td>
-                                                                    <td>@String.Join(",", item.Events)</td>
-                                                                    <td><button class="btn-primary" id="@item.GetUniqueId()" onclick="unsubscribe(this.id)">Unsubscribe</button></td>
-                                                                </tr>
-                                                            }
-                                                        }
                                                     </tbody>
                                                 </table>
                                             }

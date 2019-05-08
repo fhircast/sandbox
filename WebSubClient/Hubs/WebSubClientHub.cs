@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System;
 using System.Net;
+using Microsoft.Extensions.Configuration;
 
 namespace FHIRcastSandbox.Hubs {
     /// <summary>
@@ -16,16 +17,20 @@ namespace FHIRcastSandbox.Hubs {
         private readonly ILogger<WebSubClientHub> logger;
         private readonly ClientSubscriptions clientSubscriptions;
         private readonly IHubSubscriptions hubSubscriptions;
+        private readonly IConfiguration config;
 
-        public WebSubClientHub(ILogger<WebSubClientHub> logger, ClientSubscriptions clientSubscriptions, IHubSubscriptions hubSubscriptions) {
+        public WebSubClientHub(ILogger<WebSubClientHub> logger, ClientSubscriptions clientSubscriptions, IHubSubscriptions hubSubscriptions, IConfiguration config) {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.clientSubscriptions = clientSubscriptions ?? throw new ArgumentNullException(nameof(clientSubscriptions));
             this.hubSubscriptions = hubSubscriptions ?? throw new ArgumentNullException(nameof(hubSubscriptions));
+            this.config = config;
         }
 
         public async Task Subscribe(string subscriptionUrl, string topic, string events, string[] httpHeaders) {
             if (string.IsNullOrEmpty(subscriptionUrl)) {
-                subscriptionUrl = new UriBuilder("http", "hub", 80, "/api/hub").Uri.ToString();
+                var hubBaseURL = this.config.GetValue("Settings:HubBaseURL", "localhost");
+                var hubPort = this.config.GetValue("Settings:HubPort", 5000);
+                subscriptionUrl = new UriBuilder("http", hubBaseURL, hubPort, "/api/hub").Uri.ToString();
             }
 
             var connectionId = this.Context.ConnectionId;
@@ -34,10 +39,13 @@ namespace FHIRcastSandbox.Hubs {
             var buffer = new byte[64];
             rngCsp.GetBytes(buffer);
             var secret = Convert.ToBase64String(buffer);
+            var clientBaseURL = this.config.GetValue("Settings:ClientBaseURL", "localhost");
+            var clientPort = this.config.GetValue("Settings:ClientPort", 5001);
+
             var callbackUri = new UriBuilder(
                 "http",
-                "client",
-                80,
+                clientBaseURL,
+                clientPort,
                 $"/callback/{connectionId}");
 
             var subscription = new Subscription()

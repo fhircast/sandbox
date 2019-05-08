@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace FHIRcastSandbox.Model {
     public abstract class SubscriptionBase : ModelBase {
@@ -42,6 +44,7 @@ namespace FHIRcastSandbox.Model {
 
     public abstract class SubscriptionWithLease : SubscriptionBase {
         [URLNameOverride("hub.lease_seconds")]
+        [FromForm (Name = "lease_seconds")]
         public int? LeaseSeconds { get; set; }
 
         [BindNever, JsonIgnore]
@@ -54,6 +57,7 @@ namespace FHIRcastSandbox.Model {
         public string Secret { get; set; }
 
         [BindNever, JsonIgnore]
+        [JSONSerializationAttribue(SubscriptionObjectUses.Request)]
         public HubURL HubURL { get; set; }
 
         public static Subscription CreateNewSubscription(string subscriptionUrl, string topic, string[] events, string callback) {
@@ -146,4 +150,84 @@ namespace FHIRcastSandbox.Model {
 
         public string[] HTTPHeaders { get; set; }
     }
+
+    public class DynamicContractResolver : DefaultContractResolver
+    {
+        private readonly SubscriptionObjectUses _subscriptionObjectUse;
+
+        public DynamicContractResolver(SubscriptionObjectUses use)
+        {
+            _subscriptionObjectUse = use;
+        }
+
+        protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
+        {
+            IList<JsonProperty> properties = base.CreateProperties(type, memberSerialization);
+            IList<JsonProperty> updatedProperties = new List<JsonProperty>();
+
+            foreach (JsonProperty prop in properties)
+            {
+                IList<Attribute> attributes = prop.AttributeProvider.GetAttributes(typeof(JSONSerializationAttribue), false);
+                foreach (JSONSerializationAttribue att in attributes)
+                {
+                    if (att.SubscriptionUses.Contains(_subscriptionObjectUse))
+                    {
+                        updatedProperties.Add(prop);
+                        break;
+                    }
+                }
+            }
+
+            properties = updatedProperties;
+
+            // only serializer properties that start with the specified character
+            //properties =
+            //    properties.Where(p => p.PropertyName.StartsWith(_startingWithChar.ToString())).ToList();
+            //properties = properties.Where(p => p.AttributeProvider.GetAttributes(typeof(JSONSerializationAttribue,false).))
+            //properties = properties.Where(p => p.AttributeProvider.GetAttributes<JSONSerializationAttribue>(typeof(JSONSerializationAttribue), false).Select(x =>  //.ToList<JSONSerializationAttribue>().Where(x => x.SubscriptionUses.Contains(_subscriptionObjectUse));
+
+            return properties;
+        }
+    }
+
+    public class ShouldSerializeContractResolver : DefaultContractResolver
+    {
+        public new static readonly ShouldSerializeContractResolver Instance = new ShouldSerializeContractResolver();
+
+        protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
+        {
+            JsonProperty property = base.CreateProperty(member, memberSerialization);
+
+            if (property.DeclaringType == typeof(Subscription))
+            {
+                property.ShouldSerialize =
+                    instance =>
+                    {
+                        // Employee e = (Employee)instance;
+                        return true; //e.Manager != e;
+                    };
+            }
+
+            return property;
+        }
+    }
+
+    #region Property Attribute
+    public class JSONSerializationAttribue : Attribute
+    {
+        public JSONSerializationAttribue(params SubscriptionObjectUses[] subscriptionObjectUses)
+        {
+            this.SubscriptionUses = subscriptionObjectUses;
+        }
+
+        public SubscriptionObjectUses[] SubscriptionUses { get; private set; }
+    }
+
+    public enum SubscriptionObjectUses
+    {
+        Request,
+        Verification,
+        ToClient
+    }
+    #endregion
 }

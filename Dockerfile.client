@@ -12,6 +12,7 @@ RUN dotnet publish WebSubClient/WebSubClient.csproj --output /out/ --configurati
 FROM microsoft/dotnet:2.2-aspnetcore-runtime
 WORKDIR /app
 COPY --from=build /out .
+ENV ASPNETCORE_ENVIRONMENT=Docker
 ENTRYPOINT [ "dotnet", "WebSubClient.dll" ]
 
 EXPOSE 80

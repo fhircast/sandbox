@@ -10,7 +10,8 @@ using System;
 
 namespace FHIRcastSandbox.Core {
     public class SubscriptionCallback {
-        public Uri GetCallbackUri(Subscription subscription, SubscriptionBase parameters) {
+        public Uri GetCallbackUri(Subscription subscription, Subscription parameters)
+        {
             var properties = parameters.GetType().GetProperties()
                 .Where(x => x.GetValue(parameters, null) != null)
                 .Select(x => this.GetFieldName(x) + "=" + HttpUtility.UrlEncode(x.GetValue(parameters, null).ToString()));

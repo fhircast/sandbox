@@ -15,7 +15,8 @@ namespace FHIRcastSandbox.Rules {
             this.logger = logger;
         }
 
-        public async Task Run(Subscription subscription, bool simulateCancellation) {
+        public async Task Run(Subscription subscription, bool simulateCancellation)
+        {
             HubValidationOutcome validationOutcome = simulateCancellation ? HubValidationOutcome.Canceled : HubValidationOutcome.Valid;
             var validationResult = await this.validator.ValidateSubscription(subscription, validationOutcome);
             if (validationResult == ClientValidationOutcome.Verified)

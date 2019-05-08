@@ -14,11 +14,13 @@ namespace FHIRcastSandbox.Rules {
             this.logger = logger;
         }
 
-        public ICollection<Subscription> GetActiveSubscriptions() {
+        public ICollection<Subscription> GetActiveSubscriptions()
+        {
             return this.subscriptions;
         }
 
-        public ICollection<Subscription> GetSubscriptions(string topic, string notificationEvent) {
+        public ICollection<Subscription> GetSubscriptions(string topic, string notificationEvent)
+        {
             this.logger.LogDebug($"Finding subscriptions for topic: {topic} and event: {notificationEvent}");
             return this.subscriptions
                 .Where(x => x.Topic == topic)
@@ -31,12 +33,14 @@ namespace FHIRcastSandbox.Rules {
             return this.subscriptions.Where(x => x.Topic == sessionId).First();
         }
 
-        public void AddSubscription(Subscription subscription) {
+        public void AddSubscription(Subscription subscription)
+        {
             this.logger.LogInformation($"Adding subscription {subscription}.");
             this.subscriptions = this.subscriptions.Add(subscription);
         }
 
-        public void RemoveSubscription(Subscription subscription) {
+        public void RemoveSubscription(Subscription subscription)
+        {
             this.logger.LogInformation($"Removing subscription {subscription}.");
             this.subscriptions = this.subscriptions.Remove(subscription);
         }

@@ -9,10 +9,11 @@ namespace FHIRcastSandbox.WebSubClient.Rules {
 
     public class ClientSubscriptions {
         //a connection can have multiple subscriptions so need the inner dictionary as well.
-        private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, (SubscriptionInfo info, Subscription sub)>> subscriptions = 
+        private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, (SubscriptionInfo info, Subscription sub)>> subscriptions =
             new ConcurrentDictionary<string, ConcurrentDictionary<string, (SubscriptionInfo info, Subscription sub)>>();
 
-        public void AddPendingSubscription(string connectionId, Subscription subscription) {
+        public void AddPendingSubscription(string connectionId, Subscription subscription)
+        {
             if (connectionId == null) {
                 throw new ArgumentNullException(nameof(connectionId));
             }
@@ -44,7 +45,7 @@ namespace FHIRcastSandbox.WebSubClient.Rules {
             }          
         }
 
-        public SubscriptionWithHubURL[] GetClientSubscriptions(string connectionID)
+        public Subscription[] GetClientSubscriptions(string connectionID)
         {
             ConcurrentDictionary<string, (SubscriptionInfo info, Subscription sub)> subs;
             if (!this.subscriptions.TryGetValue(connectionID, out subs))
@@ -52,7 +53,7 @@ namespace FHIRcastSandbox.WebSubClient.Rules {
                 //Throw error
             }
 
-            return subs.Values.Select(x => new SubscriptionWithHubURL(x.sub)).ToArray();
+            return subs.Values.Select(x => x.sub).ToArray();
         }
 
         public string[] GetSubscribedClients(Notification notification) {
@@ -66,15 +67,18 @@ namespace FHIRcastSandbox.WebSubClient.Rules {
             return clients.ToArray();
         }
 
-        public Subscription GetSubscription(string subscriptionId, string topic) {
+        public Subscription GetSubscription(string subscriptionId, string topic)
+        {
             (_, var subscription) = this.GetExistingSubscription(subscriptionId, topic);
             return subscription;
         }
 
-        public SubscriptionVerificationValidation ValidateVerification(string clientConnectionId, SubscriptionVerification verification) {
+        public SubscriptionVerificationValidation ValidateVerification(string clientConnectionId, Subscription verification)
+        {
             var existingSubscription = this.GetExistingSubscription(clientConnectionId, verification.Topic);
 
-            if (existingSubscription.Equals(default((SubscriptionInfo, Subscription)))) {
+            if (existingSubscription.Equals(default((SubscriptionInfo, Subscription))))
+            {
                 return SubscriptionVerificationValidation.DoesNotExist;
             }
             if (existingSubscription.info.Status == SubscriptionStatus.Active) {
@@ -103,7 +107,8 @@ namespace FHIRcastSandbox.WebSubClient.Rules {
             this.subscriptions[clientConnectionId].TryRemove(topic, out _);
         }
 
-        private (SubscriptionInfo info, Subscription subscription) GetExistingSubscription(string clientConnectionId, string topic) {
+        private (SubscriptionInfo info, Subscription subscription) GetExistingSubscription(string clientConnectionId, string topic)
+        {
             return this.subscriptions[clientConnectionId][topic];
         }
     }

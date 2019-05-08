@@ -3,7 +3,8 @@ using FHIRcastSandbox.Model;
 
 namespace FHIRcastSandbox.Model.Http {
     public static class SubscriptionExtensions {
-        public static HttpContent CreateHttpContent(this Subscription source) {
+        public static HttpContent CreateHttpContent(this Subscription source)
+        {
 
             string content = $"hub.callback={source.Callback}" +
                 $"&hub.mode={source.Mode}" +

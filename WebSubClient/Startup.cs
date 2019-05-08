@@ -15,7 +15,7 @@ namespace FHIRcastSandbox.WebSubClient {
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services) {
-            services.AddMvc().AddJsonOptions(options => options.SerializerSettings.ContractResolver = new ShouldSerializeContractResolver()); //.AddJsonOptions(options => options.SerializerSettings.ContractResolver = new DynamicContractResolver());
+            services.AddMvc();
             services.AddSignalR();
             services.AddSingleton<ClientSubscriptions>();
             services.AddTransient<IHubSubscriptions, HubSubscriptions>();

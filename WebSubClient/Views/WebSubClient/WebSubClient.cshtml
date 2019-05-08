@@ -201,17 +201,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @if (Model.SubscriptionsToHub != null)
-                                    {
-                                        @foreach (var item in Model.SubscriptionsToHub)
-                                        {
-                                            <tr>
-                                                <td>@item.Callback.ToString().Substring(0, item.Callback.ToString().LastIndexOf('/'))/{subscriptionId}</td>
-                                                <td>@item.Topic</td>
-                                                <td>@String.Join(",", item.Events)</td>
-                                            </tr>
-                                        }
-                                    }
+
                                 </tbody>
                             </table>
                         </fieldset>

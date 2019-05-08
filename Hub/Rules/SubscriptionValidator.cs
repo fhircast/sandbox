@@ -13,23 +13,24 @@ namespace FHIRcastSandbox.Rules {
             this.logger = logger;
         }
 
-        public async Task<ClientValidationOutcome> ValidateSubscription(Subscription subscription, HubValidationOutcome outcome) {
+        public async Task<ClientValidationOutcome> ValidateSubscription(Subscription subscription, HubValidationOutcome outcome)
+        {
             if (subscription == null) {
                 throw new ArgumentNullException(nameof(subscription));
             }
 
-            SubscriptionBase callbackParameters = null;
+            Subscription callbackParameters = null;
             if (outcome == HubValidationOutcome.Canceled) {
                 logger.LogDebug("Simulating canceled subscription.");
 
-                callbackParameters = new SubscriptionCancelled
+                callbackParameters = new Subscription
                 {
                     Reason = $"The subscription {subscription} was canceled for testing purposes.",
                 };
             } else {
                 logger.LogDebug("Verifying subscription.");
 
-                callbackParameters = new SubscriptionVerification
+                callbackParameters = new Subscription
                 {
                     // Note that this is not necessarily cryptographically random/secure.
                     Challenge = Guid.NewGuid().ToString("n"),
@@ -53,7 +54,7 @@ namespace FHIRcastSandbox.Rules {
                 return ClientValidationOutcome.NotVerified;
             }
             if (outcome == HubValidationOutcome.Valid) {
-                var challenge = ((SubscriptionVerification)callbackParameters).Challenge;
+                var challenge = callbackParameters.Challenge;
                 var responseBody = (await response.Content.ReadAsStringAsync());
                 if (responseBody != challenge) {
                     logger.LogInformation($"Callback result for verification request was not equal to challenge. Response body: '{responseBody}', Challenge: '{challenge}'.");

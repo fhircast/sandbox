@@ -13,7 +13,8 @@ namespace FHIRcastSandbox.Rules {
             this.logger = logger;
         }
 
-        public async Task<HttpResponseMessage> SendNotification(Notification notification, Subscription subscription) {
+        public async Task<HttpResponseMessage> SendNotification(Notification notification, Subscription subscription)
+        {
             this.logger.LogInformation($"Sending notification {notification} to callback {subscription.Callback}");
 
             var str = Newtonsoft.Json.JsonConvert.SerializeObject(notification);

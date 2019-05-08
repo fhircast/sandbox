@@ -29,9 +29,13 @@ namespace FHIRcastSandbox.WebSubClient.Controllers
         /// <param name="verification">Hub's verification response to our subscription attempt</param>
         /// <returns></returns>
         [HttpGet("{connectionId}")]
-        public IActionResult SubscriptionVerification(string connectionId, [FromQuery] SubscriptionVerification hub) {
+        public IActionResult SubscriptionVerification(string connectionId, [FromQuery] Subscription hub) { 
             if (!this.config.GetValue("Settings:ValidateSubscriptionValidations", true)) {
                 return this.Content(hub.Challenge);
+            }
+            if (!hub.ValidModelState(SubscriptionModelStates.Verification))
+            {
+                //TODO: Error stuff for bad subscription
             }
 
             var verificationValidation = this.clientSubscriptions.ValidateVerification(connectionId, hub);

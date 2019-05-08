@@ -85,6 +85,23 @@ namespace FHIRcastSandbox.Model {
         }
     }
 
+    public class SubscriptionWithHubURL : Subscription
+    {
+        public SubscriptionWithHubURL(Subscription baseSubscription)
+        {
+            this.Callback = baseSubscription.Callback;
+            this.Events = baseSubscription.Events;
+            this.HubURL = baseSubscription.HubURL;
+            this.LeaseSeconds = baseSubscription.LeaseSeconds;
+            this.Mode = baseSubscription.Mode;
+            this.Secret = baseSubscription.Secret;
+            this.Topic = baseSubscription.Topic;
+        }
+
+        [BindNever]
+        public HubURL HubURL { get; set; }
+    }
+
     public class SubscriptionCancelled : SubscriptionBase {
         [URLNameOverride("hub.reason")]
         public string Reason { get; set; }

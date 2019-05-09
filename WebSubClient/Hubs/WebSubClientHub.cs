@@ -54,7 +54,7 @@ namespace FHIRcastSandbox.Hubs {
                 Events = events.Split(",", StringSplitOptions.RemoveEmptyEntries),
                 Mode = SubscriptionMode.subscribe,
                 Secret = secret,
-                LeaseSeconds = 3600,
+                Lease_Seconds = 3600,
                 Topic = topic,
                 HubURL = new HubURL() { URL = subscriptionUrl, HTTPHeaders = httpHeaders }
             };

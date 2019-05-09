@@ -33,7 +33,7 @@ namespace FHIRcastSandbox.Rules {
                 {
                     // Note that this is not necessarily cryptographically random/secure.
                     Challenge = Guid.NewGuid().ToString("n"),
-                    LeaseSeconds = subscription.LeaseSeconds
+                    Lease_Seconds = subscription.Lease_Seconds
                 };
 
             }

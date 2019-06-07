@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System;
 using System.Net;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json.Linq;
 
 namespace FHIRcastSandbox.Hubs {
     /// <summary>
@@ -79,6 +80,22 @@ namespace FHIRcastSandbox.Hubs {
 
             this.clientSubscriptions.PendingRemovalSubscription(clientConnectionId, topic);
             await this.hubSubscriptions.Unsubscribe(sub);
+            await this.Clients.Clients(clientConnectionId).SendAsync("updatedSubscriptions", this.clientSubscriptions.GetClientSubscriptions(clientConnectionId));
+        }
+
+        public async Task Update(string sessionContext)
+        {
+            try
+            {
+                ClientModel context = new ClientModel(JObject.Parse(sessionContext));
+
+            }
+            catch (Exception ex)
+            {
+                
+                throw;
+            }
+
         }
     }
 }

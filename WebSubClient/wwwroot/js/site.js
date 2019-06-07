@@ -8,6 +8,8 @@ connection
     .start()
     .catch(err => console.error(err.toString()));
 
+var socket;
+
 connection.on("notification", (message) => {
     console.debug(message);
 
@@ -31,17 +33,42 @@ connection.on("error", (errorMsg) => {
 
 connection.on("updatedSubscriptions", (subscriptions) => {
     console.debug("updated subscriptions called with " + subscriptions);
-    var subTable = getSubscriptionTable().getElementsByTagName('tbody')[0];
+    var subTable = getSubscriptionTable(false).getElementsByTagName('tbody')[0];
     subTable.innerHTML = "";
 
     for (var i = 0; i < subscriptions.length; i++) {
         console.debug(subscriptions[i]);
+        // Continue if subscription is unsubscribed
+        if (subscriptions[i].mode == 1) {
+            continue;
+        }
         addSubscriptionToTable(subTable, subscriptions[i]);
     }
 });
 
-function getSubscriptionTable() {
-    return document.getElementById("clientSubTable");
+connection.on("updatedSubscribers", (subscriptions) => {
+    console.debug("updated subscriptions called with " + subscriptions);
+    var subTable = getSubscriptionTable(true).getElementsByTagName('tbody')[0];
+    subTable.innerHTML = "";
+
+    for (var i = 0; i < subscriptions.length; i++) {
+        console.debug(subscriptions[i]);
+        // Continue if subscription is unsubscribed
+        if (subscriptions[i].mode == 1) {
+            continue;
+        }
+        addSubscriptionToTable(subTable, subscriptions[i]);
+    }
+});
+
+function getSubscriptionTable(subscribers) {
+    var tableID = "";
+    if (subscribers) {
+        tableID = "clientsSubscribersTable";
+    } else {
+        tableID = "clientsSubscriptionTable";
+    }
+    return document.getElementById(tableID);
 }
 
 function unsubscribe(topic) {
@@ -145,17 +172,61 @@ $("#subscribe").submit(function (e) {
     e.preventDefault();
 });
 
-$("#unsubscribe").submit(function (e) {
-    console.debug("unsubscribe param: " + e);
-    let form = $(this);
-    let topic = form[0].attributes("action");
+$("#update").submit(function (e) {
+    let sessionContext = {
+        'userIdentifier': this["userIdentifier"].value, //$(".user-identifier").val,
+        'accessionNumber': this["accessionNumber"].value,
+        'patientIdentifier': this["patientIdentifier"].value,
+        'accessionNumberGroup': this["accessionNumberGroup"].value,
+        'patientIdIssuer': this["patientIdIssuer"].value,
+        'studyId': this["studyId"].value,
+        'topic': this["topic"].value,
+        'event': this["event"].value,
+    };
 
-    console.debug("unsubscribing from " + topic);
+    //connection
+    //    .invoke(
+    //        "update",
+    //        JSON.stringify(sessionContext))
+    //    .catch(e => console.error(e));
 
-    connection
-        .invoke(
-            "unsubscribe", topic)
-        .catch(e => console.error(e));
+    var data = {
+        'action': 'event',
+        'context': sessionContext
+    };
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+        alert("socket not connected");
+    } else {
+        socket.send(JSON.stringify(data));
+    }
 
     e.preventDefault();
 });
+
+function connectSocket() {
+    socket = new WebSocket("ws://localhost:5000/ws");
+
+    socket.onopen = function (event) {
+        alert("socket opened");
+    };
+
+    socket.onclose = function (event) {
+        alert("socket closed");
+    };
+
+    socket.onmessage = function (event) {
+        alert("message: " + event.data);
+    };
+};
+
+function sendSocketMessage() {
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+        alert("socket not connected");
+    }
+
+    var data = {
+        'action': 'event',
+        'data': 'otherdata'
+    };
+    socket.send(JSON.stringify(data));
+};

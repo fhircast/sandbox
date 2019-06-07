@@ -88,7 +88,7 @@ namespace FHIRcastSandbox.Model {
             this.Callback = baseSubscription.Callback;
             this.Events = baseSubscription.Events;
             this.HubURL = baseSubscription.HubURL;
-            this.LeaseSeconds = baseSubscription.LeaseSeconds;
+            this.Lease_Seconds = baseSubscription.Lease_Seconds;
             this.Mode = baseSubscription.Mode;
             this.Secret = baseSubscription.Secret;
             this.Topic = baseSubscription.Topic;
@@ -133,7 +133,7 @@ namespace FHIRcastSandbox.Model {
         [JsonProperty(PropertyName = "id")]
         public string Id { get; set; }
         [JsonProperty(PropertyName = "event")]
-        public NotificationEvent Event { get; } = new NotificationEvent();
+        public NotificationEvent Event { get; set; } = new NotificationEvent();
     }
 
     public class NotificationEvent {

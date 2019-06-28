@@ -48,16 +48,7 @@ namespace FHIRcastSandbox.Controllers {
                 Id = Guid.NewGuid().ToString(),
                 Timestamp = DateTime.Now,
             };
-            notification.Event.Context = new[] {
-                new {
-                    model.AccessionNumber,
-                    model.AccessionNumberGroup,
-                    model.PatientIdentifier,
-                    model.PatientIdIssuer,
-                    model.StudyId,
-                    model.UserIdentifier,
-                }
-            };
+
             notification.Event.Topic = model.Topic;
             notification.Event.Event = model.Event;
 

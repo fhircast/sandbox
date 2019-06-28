@@ -2,9 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
+using Hl7.Fhir.Model;
+using Hl7.Fhir.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace FHIRcastSandbox.Model {
     public abstract class SubscriptionBase : ModelBase {
@@ -146,7 +149,9 @@ namespace FHIRcastSandbox.Model {
         public string Event { get; set; }
 
         [JsonProperty(PropertyName = "context")]
-        public object[] Context { get; set; }
+        [JsonConverter(typeof(ContextJsonConverter))]
+        public Hl7.Fhir.Model.Resource[] Context { get; set; }
+        //public Object[] Context { get; set; }
     }
 
     public class URLNameOverride : Attribute {
@@ -162,5 +167,79 @@ namespace FHIRcastSandbox.Model {
         public string URL { get; set; }
 
         public string[] HTTPHeaders { get; set; }
+    }
+
+    public class ContextJsonConverter : JsonConverter
+    {
+        public override bool CanConvert(Type objectType)
+        {
+            return true;
+        }
+
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            if (value == null)
+            {
+                serializer.Serialize(writer, null);
+                return;
+            }
+
+            try
+            {
+                Resource[] resources = (Resource[])value;
+                //JToken t = JToken.FromObject(resources);
+                if (resources == null)
+                {
+                    serializer.Serialize(writer, null);
+                    return;
+                }
+
+                //JObject o = (JObject)t;
+
+
+
+                writer.WriteStartArray();
+
+                foreach (Resource resource in resources)
+                {
+                    writer.WriteStartObject();
+                    Type type = resource.GetType();
+
+                    string resourceType = "";
+                    if (type == typeof(Patient))
+                    {
+                        resourceType = "Patient";
+                    }
+                    else if (type == typeof(ImagingStudy))
+                    {
+                        resourceType = "ImagingStudy";
+                    }
+
+                    writer.WritePropertyName("key");
+                    writer.WriteValue(resourceType.ToLower());
+                    writer.WritePropertyName("resource");
+
+                    FhirJsonSerializer fhirJsonSerializer = new FhirJsonSerializer();
+                    writer.WriteRawValue(fhirJsonSerializer.SerializeToString(resource, summary: Hl7.Fhir.Rest.SummaryType.True));
+
+                    writer.WriteEndObject(); // array object
+                }
+
+                writer.WriteEndArray();
+            }
+            catch (Exception ex)
+            {
+
+                serializer.Serialize(writer, null);
+                return;
+            }
+
+            
+        }
     }
 }

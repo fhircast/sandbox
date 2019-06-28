@@ -42,7 +42,6 @@ namespace FHIRcastSandbox.WebSubClient {
             });
 
             app.UseMvc();
-
         }
     }
 }

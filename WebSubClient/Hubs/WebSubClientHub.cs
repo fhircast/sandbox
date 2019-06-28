@@ -85,16 +85,6 @@ namespace FHIRcastSandbox.Hubs {
 
         public async Task Update(string sessionContext)
         {
-            try
-            {
-                ClientModel context = new ClientModel(JObject.Parse(sessionContext));
-
-            }
-            catch (Exception ex)
-            {
-                
-                throw;
-            }
 
         }
     }

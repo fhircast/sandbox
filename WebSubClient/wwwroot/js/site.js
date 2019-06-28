@@ -1,4 +1,99 @@
 ﻿// Write your JavaScript code.
+//#region Classes
+class ContextResource {
+    name = "";
+    properties = [];
+
+    constructor(resourceJson) {
+        this.name = resourceJson['name'];
+        for (var p in resourceJson.properties) {
+            var property = new Array();
+            property[p] = resourceJson.properties[p];
+            this.addProperty(property);
+        }
+    }
+
+    addProperty(property) {
+        this.properties.push(property);
+    }
+}
+
+class ClientContext {
+    resources = [];
+
+    addResource(resourceJson) {
+        var resource = new ContextResource(resourceJson);
+        this.resources.push(resource);
+    }
+
+    updateClientUI() {
+        var contextFields = document.getElementById("contextFields");
+        contextFields.innerHTML = "";
+
+        // Parse JSON
+        var htmlString = "";
+        for (var i = 0; i < this.resources.length; i++) {
+            var resource = this.resources[i];
+
+            htmlString += startRow();
+            htmlString += startCol();
+
+            htmlString = addToHTML(htmlString, '<h3>' + resource.name + '</h3>');
+
+            for (var j = 0; j < resource.properties.length; j++) {
+                var property = resource.properties[j];
+                for (var key in property) {
+                    htmlString = addToHTML(htmlString, '<label>' + property[key] + '</label>');
+                    htmlString = addToHTML(htmlString, '<input type="text" id="' + key + '" class="form-control" /></br >');
+                }
+            }
+
+            htmlString += endDiv();
+            htmlString += endDiv();
+        }
+
+        htmlString += startRow();
+        htmlString += startCol();
+        htmlString += '<label>Topic</label>';
+        htmlString += '<input type="text" id="topic" class="form-control" readonly/>';
+        htmlString += endDiv();
+        htmlString += endDiv();
+
+        htmlString += startRow();
+        htmlString += startCol();
+        htmlString += '<label>Event</label>';
+        htmlString += '<input type="text" id="event" class="form-control" />';
+        htmlString += endDiv();
+        htmlString += endDiv();
+
+        contextFields.innerHTML = htmlString;
+    }
+
+    callbackFunction(clientContext, httpRequest) {
+        var clientDefinition = JSON.parse(httpRequest.responseText);
+
+        for (var i = 0; i < clientDefinition.Resources.length; i++) {
+            clientContext.addResource(clientDefinition.Resources[i]);
+        }
+
+        clientContext.updateClientUI();
+    }
+
+    constructor() {
+        var request = new XMLHttpRequest();
+        var callback = this.callbackFunction;
+        var clientContext = this;
+        request.open("GET", "../data/clientContextDefinition.json");
+        request.send(null);
+        request.onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 200) {
+                callback(clientContext, this);
+            }
+        };
+    }
+}
+//#endregion
+
 const connection = new signalR.HubConnectionBuilder()
     .withUrl("/websubclienthub")
     .configureLogging(signalR.LogLevel.Information)
@@ -8,8 +103,12 @@ connection
     .start()
     .catch(err => console.error(err.toString()));
 
-var socket;
+var clientTopic = "";
 
+// Initiate session context fields
+var context = new ClientContext();
+
+//#region SignalR Connection Functions
 connection.on("notification", (message) => {
     console.debug(message);
 
@@ -19,10 +118,10 @@ connection.on("notification", (message) => {
     for (var i = 0; i < message.event.context.length; i++) {
         var context = message.event.context[i];
         if (context.key === "patient") {
-            $(".patient-identifier").val(context.resource.id);
+            $(".patientId").val(context.resource.id);
         }
         if (context.key === "study") {
-            $(".study-id").val(context.resource.id);
+            $(".accession").val(context.resource.id);
         }
     }
 });
@@ -60,6 +159,26 @@ connection.on("updatedSubscribers", (subscriptions) => {
         addSubscriptionToTable(subTable, subscriptions[i]);
     }
 });
+//#endregion
+
+//#region HTML Functions
+function startRow() {
+    return '<div class="row">';
+}
+
+function startCol() {
+    return '<div class="col">';
+}
+
+function endDiv() {
+    return '</div>';
+}
+
+function addToHTML(htmlString, contentToAdd) {
+    return htmlString + contentToAdd;
+}
+//#endregion
+
 
 function getSubscriptionTable(subscribers) {
     var tableID = "";
@@ -126,6 +245,7 @@ function addHttpHeader() {
     valueCell.appendChild(valueText);
 }
 
+//#region Button events
 $("#subscribe").submit(function (e) {
     let form = $(this);
     let url = form.attr("action");
@@ -174,59 +294,60 @@ $("#subscribe").submit(function (e) {
 
 $("#update").submit(function (e) {
     let sessionContext = {
-        'userIdentifier': this["userIdentifier"].value, //$(".user-identifier").val,
-        'accessionNumber': this["accessionNumber"].value,
-        'patientIdentifier': this["patientIdentifier"].value,
-        'accessionNumberGroup': this["accessionNumberGroup"].value,
-        'patientIdIssuer': this["patientIdIssuer"].value,
-        'studyId': this["studyId"].value,
-        'topic': this["topic"].value,
+
+        'topic': clientTopic,
         'event': this["event"].value,
     };
-
-    //connection
-    //    .invoke(
-    //        "update",
-    //        JSON.stringify(sessionContext))
-    //    .catch(e => console.error(e));
-
+    var resources = [];
+    var count = 0;
+    for (var i = 0; i < context.resources.length; i++) {
+        var resource = context.resources[i];
+        var resourceContext = {};
+        var hasData = false;
+        for (var j = 0; j < resource.properties.length; j++) {
+            var property = resource.properties[j];
+            for (var key in property) {
+                if (this[key].value !== "") {
+                    resourceContext[key] = this[key].value;
+                    hasData = true;
+                }                
+            }
+        }
+        if (hasData) {
+            var temp = {};
+            temp[resource.name] = resourceContext;
+            //resourceContext['name'] = resource.name;
+            resources[count++] = temp; //resourceContext;
+        }       
+    }
+    sessionContext['resources'] = resources;
     var data = {
         'action': 'event',
         'context': sessionContext
     };
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-        alert("socket not connected");
-    } else {
-        socket.send(JSON.stringify(data));
-    }
+
 
     e.preventDefault();
 });
+//#endregion
 
-function connectSocket() {
-    socket = new WebSocket("ws://localhost:5000/ws");
+function getCurrentContext() {
 
-    socket.onopen = function (event) {
-        alert("socket opened");
-    };
+}
 
-    socket.onclose = function (event) {
-        alert("socket closed");
-    };
+//#region Alert Functions
+function popupNotification(message) {
+    document.getElementById("alertText").innerHTML = message;
+    $('#alertPlaceholder').fadeIn(1);
+    setTimeout(notificationTimeout, 3000);
+}
 
-    socket.onmessage = function (event) {
-        alert("message: " + event.data);
-    };
-};
+function notificationTimeout() {
+    $('#alertPlaceholder').fadeOut(3000, "swing", clearNotification);
+}
 
-function sendSocketMessage() {
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-        alert("socket not connected");
-    }
+function clearNotification() {
+    document.getElementById("alertText").innerHTML = "";
+}
+//#endregion
 
-    var data = {
-        'action': 'event',
-        'data': 'otherdata'
-    };
-    socket.send(JSON.stringify(data));
-};

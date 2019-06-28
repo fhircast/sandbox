@@ -18,6 +18,14 @@ namespace FHIRcastSandbox.Rules {
             contexts = new ConcurrentDictionary<string, object>();
         }
 
+        public string addContext()
+        {
+            int count = contexts.Count;
+            string topic = $"topic{count++}";
+            contexts.Add(topic, null);
+            return topic;
+        }
+
         public void setContext(string topic, object context)
         {
             contexts[topic] = context;

@@ -35,7 +35,6 @@ namespace FHIRcastSandbox {
             services.AddSingleton<IContexts, Contexts>();
             services.AddTransient<IBackgroundJobClient, BackgroundJobClient>();
             services.AddTransient<ValidateSubscriptionJob>();
-            services.AddTransient<Sockets>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -47,46 +46,8 @@ namespace FHIRcastSandbox {
             app.UseMvc();
             app.UseHangfireServer();
             app.UseStaticFiles();
-            app.UseWebSockets();
 
             JobActivator.Current = new ServiceProviderJobActivator(app.ApplicationServices);
-
-            app.Use(async (context, next) =>
-            {
-                if (context.Request.Path == "/ws")
-                {
-                    if (context.WebSockets.IsWebSocketRequest)
-                    {
-                        WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
-                        Sockets sockets = (Sockets) app.ApplicationServices.GetService(typeof(Sockets));
-                        await sockets.AddSocket(webSocket);
-                        //await Echo(context, webSocket);
-                        //await Sockets.HandleSocketMessageAsync(context, webSocket);
-                    }
-                    else
-                    {
-                        context.Response.StatusCode = 400;
-                    }
-                }
-                else
-                {
-                    await next();
-                }
-
-            });
-        }
-
-        private async Task Echo(HttpContext context, WebSocket webSocket)
-        {
-            var buffer = new byte[1024 * 4];
-            WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-            while (!result.CloseStatus.HasValue)
-            {
-                await webSocket.SendAsync(new ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None);
-
-                result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-            }
-            await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
         }
     }
 

@@ -13,6 +13,12 @@
 <body>
     <h1 align="center">FHIRcast Sandbox</h1>
     <div id="root" class="container-fluid" style="background-color:darkgray;">
+        <div style="position:fixed;top:0;left:25%;width:50%; display: none" id="alertPlaceholder">
+            <div class="alert alert-warning alert-dismissable">
+                <a class="close" data-dismiss="alert">×</a>
+                <span id="alertText"></span>
+            </div>
+        </div>
         <div class="row">
             @* Client info column *@
             <div class="col" style="border:1px solid black">
@@ -20,7 +26,7 @@
                 @* Title row *@
                 <div class="row">
                     <div class="col-6"><h3 align="center">Subscription info</h3></div>
-                    <div class="col-6"><h3 align="center">User session info</h3></div>
+                    <div class="col-6"><h3 align="center">Context</h3></div>
                 </div>
                 @* Content row *@
                 <div class="row justify-content-md-center">
@@ -52,7 +58,7 @@
                                                 <label>Topic</label>
                                                 <br />
                                                 <div>
-                                                    <input type="text" name="topic" id="topic" class="form-control" />
+                                                    <input type="text" name="topic" id="subscriptionTopic" class="form-control" />
                                                 </div>
                                                 <label>Events</label>
                                                 <br />
@@ -91,7 +97,7 @@
                                             </thead>
                                             <tbody></tbody>
                                         </table>
-                                        <br/>
+                                        <br />
                                         <table id="clientsSubscribersTable" class="table table-striped table-bordered table-dark">
                                             <thead class="thead-dark">
                                                 <tr><td colspan="4" align="center">Client's Subscribers</td></tr>
@@ -109,60 +115,66 @@
                         </div>
                     </div>
                     @* User session column *@
-                    <div class="col-6" style="border:1px solid black">
+                    <div class="col-md-6" style="border:1px solid black">
                         <div align="center">
                             <fieldset class="UserSessionFieldSet">
                                 @{
                                     using (Html.BeginForm("update", "WebSubClient", FormMethod.Post, new { id = "update" }))
                                     {
-                                        <div class="row">
-                                            <div class="col">
-                                                <div class="form-group">
-                                                    <label>User Identifier</label>
-                                                    <br />
-                                                    <input type="text" name="userIdentifier" id="userIdentifier" class="form-control" />
-                                                </div>
-                                                <div class="form-group">
-                                                    <label>Patient Identifier</label>
-                                                    <br />
-                                                    <input type="text" name="patientIdentifier" id="patientIdentifier" class="form-control" />                                                  
-                                                </div>
-                                                <div class="form-group">
-                                                    <label>Patient Id Issuer</label>
-                                                    <br />
-                                                    <input type="text" name="patientIdIssuer" id="patientIdIssuer" class="form-control" />
-                                                </div>
-                                            </div>
-                                            <div class="col">
-                                                <div class="form-group">
-                                                    <label>Accession Number</label>
-                                                    <br />
-                                                    <input type="text" name="accessionNumber" id="accessionNumber" class="form-control" />
-                                                </div>
-                                                <div class="form-group">
-                                                    <label>Accession Number Group</label>
-                                                    <br />
-                                                    <input type="text" name="accessionNumberGroup" id="accessionNumberGroup" class="form-control" />
-                                                </div>
-                                                <div class="form-group">
-                                                    <label>Study Id</label>
-                                                    <br />
-                                                    <input type="text" name="studyId" id="studyId" class="form-control" />
-                                                </div>
+                                        <div class="row" align="center">
+                                            <div class="col" id="contextFields">
+
                                             </div>
                                         </div>
 
+                                        @*<div class="row">
+                                                <div class="col">
+                                                    <div class="form-group">
+                                                        <label>User Identifier</label>
+                                                        <br />
+                                                        <input type="text" name="userIdentifier" id="userIdentifier" class="form-control" />
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label>Patient Identifier</label>
+                                                        <br />
+                                                        <input type="text" name="patientIdentifier" id="patientIdentifier" class="form-control" />
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label>Patient Id Issuer</label>
+                                                        <br />
+                                                        <input type="text" name="patientIdIssuer" id="patientIdIssuer" class="form-control" />
+                                                    </div>
+                                                </div>
+                                                <div class="col">
+                                                    <div class="form-group">
+                                                        <label>Accession Number</label>
+                                                        <br />
+                                                        <input type="text" name="accessionNumber" id="accessionNumber" class="form-control" />
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label>Accession Number Group</label>
+                                                        <br />
+                                                        <input type="text" name="accessionNumberGroup" id="accessionNumberGroup" class="form-control" />
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label>Study Id</label>
+                                                        <br />
+                                                        <input type="text" name="studyId" id="studyId" class="form-control" />
+                                                    </div>
+                                                </div>
+                                            </div>
 
-                                        <div class="form-group">
-                                            <label>Topic</label>
-                                            <br />
-                                            <input type="text" name="topic" id="topic" class="form-control" />
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Event</label>
-                                            <br />
-                                            <input type="text" name="event" id="event" class="form-control" />
-                                        </div>
+
+                                            <div class="form-group">
+                                                <label>Topic</label>
+                                                <br />
+                                                <input type="text" name="topic" id="topic" class="form-control" />
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Event</label>
+                                                <br />
+                                                <input type="text" name="event" id="event" class="form-control" />
+                                            </div>*@
                                         <div class="form-group">
                                             <input type="submit" value="Update" class="btn btn-secondary" />
                                         </div>
@@ -187,6 +199,7 @@
                             <div class="form-group">
                                 <input type="button" value="Connect" id="connect" onclick="connectSocket()" class="btn btn-secondary" />
                                 <input type="button" value="Send" id="send" onclick="sendSocketMessage()" class="btn btn-secondary" />
+                                <input type="button" value="Close" id="close" onclick="closeSocket()" class="btn btn-secondary" />
                             </div>
                         </div>
                     </div>

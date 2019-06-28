@@ -1,0 +1,18 @@
+﻿{
+  "Resources": [
+    {
+      "name": "Patient",
+      "properties": {
+        "patientId": "Patient ID"
+      }
+    },
+    {
+      "name": "ImagingStudy",
+      "properties": {
+        "accession": "Accession Number"
+      }
+    }
+  ],
+  "topic": "Latest Topic",
+  "event": "Latest Event"
+}

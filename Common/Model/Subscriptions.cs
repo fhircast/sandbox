@@ -9,8 +9,10 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace FHIRcastSandbox.Model {
-    public abstract class SubscriptionBase : ModelBase {
+namespace FHIRcastSandbox.Model
+{
+    public abstract class SubscriptionBase : ModelBase
+    {
         public static IEqualityComparer<Subscription> DefaultComparer => new SubscriptionComparer();
 
         [BindRequired]
@@ -34,16 +36,19 @@ namespace FHIRcastSandbox.Model {
         /// Gets a subscriber-unique ID of this subscription.
         /// </summary>
         /// <returns>An ID that is unique to the subscriber creating the subscription.</returns>
-        public string GetUniqueId() {
+        public string GetUniqueId()
+        {
             return GetSubscriptionId(this.Topic, this.Callback);
         }
 
-        public static string GetSubscriptionId(string topic, string callback) {
+        public static string GetSubscriptionId(string topic, string callback)
+        {
             return BitConverter.ToString(SHA256.Create().ComputeHash(System.Text.Encoding.UTF8.GetBytes((topic ?? "") + (callback ?? ""))));
         }
     }
 
-    public abstract class SubscriptionWithLease : SubscriptionBase {
+    public abstract class SubscriptionWithLease : SubscriptionBase
+    {
         [URLNameOverride("hub.lease_seconds")]
         public int? Lease_Seconds { get; set; }
 
@@ -51,7 +56,8 @@ namespace FHIRcastSandbox.Model {
         public TimeSpan? Lease => this.Lease_Seconds.HasValue ? TimeSpan.FromSeconds(this.Lease_Seconds.Value) : (TimeSpan?)null;
     }
 
-    public class Subscription : SubscriptionWithLease {
+    public class Subscription : SubscriptionWithLease
+    {
         [BindRequired]
         [URLNameOverride("hub.secret")]
         public string Secret { get; set; }
@@ -59,7 +65,8 @@ namespace FHIRcastSandbox.Model {
         [BindNever, JsonIgnore]
         public HubURL HubURL { get; set; }
 
-        public static Subscription CreateNewSubscription(string subscriptionUrl, string topic, string[] events, string callback, int leaseSeconds = 3600) {
+        public static Subscription CreateNewSubscription(string subscriptionUrl, string topic, string[] events, string callback, int leaseSeconds = 3600)
+        {
             var rngCsp = new RNGCryptoServiceProvider();
             var buffer = new byte[32];
             rngCsp.GetBytes(buffer);
@@ -78,7 +85,8 @@ namespace FHIRcastSandbox.Model {
             return subscription;
         }
 
-        public bool IsInterestedInNotification(Notification notification) {
+        public bool IsInterestedInNotification(Notification notification)
+        {
             return this.Events.Any(e => e == notification.Event.Event)
                 && notification.Event.Topic == this.Topic;
         }
@@ -101,12 +109,14 @@ namespace FHIRcastSandbox.Model {
         public HubURL HubURL { get; set; }
     }
 
-    public class SubscriptionCancelled : SubscriptionBase {
+    public class SubscriptionCancelled : SubscriptionBase
+    {
         [URLNameOverride("hub.reason")]
         public string Reason { get; set; }
     }
 
-    public class SubscriptionVerification : SubscriptionWithLease {
+    public class SubscriptionVerification : SubscriptionWithLease
+    {
         [URLNameOverride("hub.challenge")]
         public string Challenge { get; set; }
 
@@ -114,48 +124,30 @@ namespace FHIRcastSandbox.Model {
         public string Reason { get; set; }
     }
 
-    public enum SubscriptionMode {
+    public enum SubscriptionMode
+    {
         subscribe,
         unsubscribe,
         denied,
     }
 
-    public class SubscriptionComparer : IEqualityComparer<Subscription> {
-        public bool Equals(Subscription sub1, Subscription sub2) {
+    public class SubscriptionComparer : IEqualityComparer<Subscription>
+    {
+        public bool Equals(Subscription sub1, Subscription sub2)
+        {
             return sub1.Callback == sub2.Callback && sub1.Topic == sub2.Topic;
         }
 
-        public int GetHashCode(Subscription subscription) {
+        public int GetHashCode(Subscription subscription)
+        {
             return subscription.Callback.GetHashCode() ^ subscription.Topic.GetHashCode();
         }
     }
 
-    public class Notification : ModelBase {
-        [JsonProperty(PropertyName = "timestamp")]
-        public DateTime Timestamp { get; set; }
-        [JsonProperty(PropertyName = "id")]
-        public string Id { get; set; }
-        [JsonProperty(PropertyName = "event")]
-        public NotificationEvent Event { get; set; } = new NotificationEvent();
-    }
-
-    public class NotificationEvent {
-        [ModelBinder(Name = "hub.topic")]
-        [JsonProperty(PropertyName = "hub.topic")]
-        public string Topic { get; set; }
-
-        [ModelBinder(Name = "hub.event")]
-        [JsonProperty(PropertyName = "hub.event")]
-        public string Event { get; set; }
-
-        [JsonProperty(PropertyName = "context")]
-        [JsonConverter(typeof(ContextJsonConverter))]
-        public Hl7.Fhir.Model.Resource[] Context { get; set; }
-        //public Object[] Context { get; set; }
-    }
-
-    public class URLNameOverride : Attribute {
-        public URLNameOverride(string value) {
+    public class URLNameOverride : Attribute
+    {
+        public URLNameOverride(string value)
+        {
             this.Value = value;
         }
 
@@ -167,79 +159,5 @@ namespace FHIRcastSandbox.Model {
         public string URL { get; set; }
 
         public string[] HTTPHeaders { get; set; }
-    }
-
-    public class ContextJsonConverter : JsonConverter
-    {
-        public override bool CanConvert(Type objectType)
-        {
-            return true;
-        }
-
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-        {
-            if (value == null)
-            {
-                serializer.Serialize(writer, null);
-                return;
-            }
-
-            try
-            {
-                Resource[] resources = (Resource[])value;
-                //JToken t = JToken.FromObject(resources);
-                if (resources == null)
-                {
-                    serializer.Serialize(writer, null);
-                    return;
-                }
-
-                //JObject o = (JObject)t;
-
-
-
-                writer.WriteStartArray();
-
-                foreach (Resource resource in resources)
-                {
-                    writer.WriteStartObject();
-                    Type type = resource.GetType();
-
-                    string resourceType = "";
-                    if (type == typeof(Patient))
-                    {
-                        resourceType = "Patient";
-                    }
-                    else if (type == typeof(ImagingStudy))
-                    {
-                        resourceType = "ImagingStudy";
-                    }
-
-                    writer.WritePropertyName("key");
-                    writer.WriteValue(resourceType.ToLower());
-                    writer.WritePropertyName("resource");
-
-                    FhirJsonSerializer fhirJsonSerializer = new FhirJsonSerializer();
-                    writer.WriteRawValue(fhirJsonSerializer.SerializeToString(resource, summary: Hl7.Fhir.Rest.SummaryType.True));
-
-                    writer.WriteEndObject(); // array object
-                }
-
-                writer.WriteEndArray();
-            }
-            catch (Exception ex)
-            {
-
-                serializer.Serialize(writer, null);
-                return;
-            }
-
-            
-        }
     }
 }

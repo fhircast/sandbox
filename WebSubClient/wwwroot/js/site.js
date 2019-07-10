@@ -103,7 +103,7 @@ connection
     .start()
     .catch(err => console.error(err.toString()));
 
-var clientTopic = "";
+var clientTopic = "topic1";
 
 // Initiate session context fields
 var context = new ClientContext();
@@ -310,7 +310,7 @@ $("#update").submit(function (e) {
                 if (this[key].value !== "") {
                     resourceContext[key] = this[key].value;
                     hasData = true;
-                }                
+                }
             }
         }
         if (hasData) {
@@ -318,7 +318,7 @@ $("#update").submit(function (e) {
             temp[resource.name] = resourceContext;
             //resourceContext['name'] = resource.name;
             resources[count++] = temp; //resourceContext;
-        }       
+        }
     }
     sessionContext['resources'] = resources;
     var data = {
@@ -326,6 +326,17 @@ $("#update").submit(function (e) {
         'context': sessionContext
     };
 
+    var clientModel = {
+        PatientID: '1234',
+        AccessionNumber: '5678'
+    };
+
+    connection
+        .invoke("update",
+            clientTopic,
+            this["event"].value,
+            clientModel)
+        .catch(e => handleError(e));
 
     e.preventDefault();
 });
@@ -336,8 +347,19 @@ function getCurrentContext() {
 }
 
 //#region Alert Functions
+function handleError(error) {
+    console.log(error);
+    popupNotification(error.message);
+}
+
 function popupNotification(message) {
-    document.getElementById("alertText").innerHTML = message;
+    if (!alertDivExists()) {
+        addAlertDiv();
+    }
+
+    var alertTextSpan = document.getElementById("alertText");
+
+    alertTextSpan.innerHTML = message;
     $('#alertPlaceholder').fadeIn(1);
     setTimeout(notificationTimeout, 3000);
 }
@@ -347,7 +369,32 @@ function notificationTimeout() {
 }
 
 function clearNotification() {
-    document.getElementById("alertText").innerHTML = "";
+    if (alertDivExists()) {
+        document.getElementById("alertText").innerHTML = "";
+    }
+}
+
+function alertDivExists() {
+    return (document.getElementById("alertMessageDiv") != null);
+}
+
+function addAlertDiv() {
+    var closeButton = document.createElement("a");
+    closeButton.setAttribute("class", "close");
+    closeButton.setAttribute("data-dismiss", "alert");
+    closeButton.innerHTML = "x";
+
+    var textSpan = document.createElement("span");
+    textSpan.setAttribute("id", "alertText");
+
+    var element = document.createElement("div");
+    element.setAttribute("id", "alertMessageDiv");
+    element.setAttribute("class", "alert alert-warning alert-dismissable");
+    element.appendChild(closeButton);
+    element.appendChild(textSpan);
+
+    document.getElementById("alertPlaceholder").appendChild(element);
+    return textSpan;
 }
 //#endregion
 

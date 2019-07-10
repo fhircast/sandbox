@@ -95,6 +95,12 @@ namespace FHIRcastSandbox.Controllers {
             return this.Ok();
         }
 
+        /// <summary>
+        /// TODO: Looks like the query for current context functionality. Not sure where this will be after 
+        /// ballot resolution so look into this later.
+        /// </summary>
+        /// <param name="topicId"></param>
+        /// <returns></returns>
         [Route("{topicId}")]
         [HttpGet]
         public object GetCurrentcontext(string topicId) {

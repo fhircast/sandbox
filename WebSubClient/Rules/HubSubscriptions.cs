@@ -6,6 +6,10 @@ using Microsoft.Extensions.Logging;
 
 namespace FHIRcastSandbox.WebSubClient.Rules
 {
+    /// <summary>
+    /// This class handles subscribing and unsubscribing to other applications 
+    /// from this running client.
+    /// </summary>
     public class HubSubscriptions : IHubSubscriptions
     {
         private readonly ILogger<HubSubscriptions> logger;

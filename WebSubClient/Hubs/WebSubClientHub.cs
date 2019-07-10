@@ -5,11 +5,13 @@ using Microsoft.Extensions.Logging;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System;
-using System.Net;
 using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json.Linq;
+using System.Net.Http;
+using Newtonsoft.Json;
+using System.Text;
 
-namespace FHIRcastSandbox.Hubs {
+namespace FHIRcastSandbox.Hubs
+{
     /// <summary>
     /// This is a SignalR hub, not ot be confused with a FHIRcast hub.
     /// </summary>
@@ -83,9 +85,52 @@ namespace FHIRcastSandbox.Hubs {
             await this.Clients.Clients(clientConnectionId).SendAsync("updatedSubscriptions", this.clientSubscriptions.GetClientSubscriptions(clientConnectionId));
         }
 
-        public async Task Update(string sessionContext)
+        /// <summary>
+        /// Recieved an update from our client, send that notification to the hub (HubController -> Notify)
+        /// for it to send out to the awaiting subscriber
+        /// </summary>
+        /// <param name="topic">topicId</param>
+        /// <param name="eventName">event that occurred</param>
+        /// <param name="model">contextual information sent down from client</param>
+        /// <returns></returns>
+        public async Task Update(string topic, string eventName, ClientModel model)
         {
+            HttpClient httpClient = new HttpClient();
 
+            // Build Notification object
+            Notification notification = new Notification
+            {
+                Id = Guid.NewGuid().ToString(),
+                Timestamp = DateTime.Now,
+            };
+
+            Hl7.Fhir.Model.Patient patient = new Hl7.Fhir.Model.Patient();
+            patient.Id = model.PatientID;
+
+            Hl7.Fhir.Model.ImagingStudy imagingStudy = new Hl7.Fhir.Model.ImagingStudy();
+            imagingStudy.Accession = new Hl7.Fhir.Model.Identifier("accession", model.AccessionNumber);
+
+            NotificationEvent notificationEvent = new NotificationEvent()
+            {
+                Topic = topic,
+                Event = eventName,
+                Context = new Hl7.Fhir.Model.Resource[]
+                {
+                    patient,
+                    imagingStudy
+                }
+            };
+            notification.Event = notificationEvent;
+
+            // Build hub url to send notification to
+            var hubBaseURL = this.config.GetValue("Settings:HubBaseURL", "localhost");
+            var hubPort = this.config.GetValue("Settings:HubPort", 5000);
+            string subscriptionUrl = new UriBuilder("http", hubBaseURL, hubPort, "/api/hub").Uri.ToString();
+
+            // Send notification and await response
+            this.logger.LogDebug($"Sending notification to {subscriptionUrl}/{topic}: {notification.ToString()}");
+            var response = await httpClient.PostAsync($"{subscriptionUrl}/{topic}", new StringContent(JsonConvert.SerializeObject(notification), Encoding.UTF8, "application/json"));
+            response.EnsureSuccessStatusCode();
         }
     }
 }

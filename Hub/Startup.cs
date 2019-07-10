@@ -6,16 +6,10 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Net.Http;
-using System.Net.WebSockets;
-using Microsoft.AspNetCore.Http;
-using System.Threading.Tasks;
-using System.Threading;
-using FHIRcastSandbox.Hub.Core;
 
-namespace FHIRcastSandbox {
+namespace FHIRcastSandbox
+{
     public class Startup {
         public Startup(IConfiguration configuration) {
             Configuration = configuration;

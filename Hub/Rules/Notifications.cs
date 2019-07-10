@@ -18,7 +18,7 @@ namespace FHIRcastSandbox.Rules {
 
         public async Task<HttpResponseMessage> SendNotification(Notification notification, Subscription subscription) {
             // Create the JSON body
-            string body = JsonConvert.SerializeObject(notification, Formatting.Indented);
+            string body = notification.ToJson();
             HttpContent httpContent = new StringContent(body);
 
             // Add the headers
@@ -56,7 +56,7 @@ namespace FHIRcastSandbox.Rules {
                     stringBuilder.AppendFormat("{0:x2}", b);
                 }
 
-                return "sha256=" + stringBuilder.ToString(); //Encoding.UTF8.GetString(hash);
+                return "sha256=" + stringBuilder.ToString();
             }
         }
     }

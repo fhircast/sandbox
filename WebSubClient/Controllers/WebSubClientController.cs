@@ -33,36 +33,6 @@ namespace FHIRcastSandbox.Controllers {
 
         [HttpGet]
         public IActionResult Get() => this.View(nameof(WebSubClientController).Replace("Controller", ""), new ClientModel());
-
-        /// <summary>
-        /// Called when the client updates its context. Lets the hub know of the changes so it
-        /// can notify any subscribing apps.
-        /// </summary>
-        /// <param name="model"></param>
-        /// <returns></returns>
-        [HttpPost("notify")]
-        public async Task<IActionResult> Post([FromForm] ClientModel model) {
-            var httpClient = new HttpClient();
-            var notification = new Notification
-            {
-                Id = Guid.NewGuid().ToString(),
-                Timestamp = DateTime.Now,
-            };
-
-            notification.Event.Topic = model.Topic;
-            notification.Event.Event = model.Event;
-
-            var interestedClients = this.clientSubscriptions.GetSubscribedClients(notification);
-
-            foreach (var subscriptionId in interestedClients)
-            {
-                var hubURL = this.clientSubscriptions.GetSubscription(subscriptionId, model.Topic).HubURL;
-                var response = await httpClient.PostAsync($"{hubURL.URL}/{model.Topic}", new StringContent(JsonConvert.SerializeObject(notification), Encoding.UTF8, "application/json"));
-                response.EnsureSuccessStatusCode();
-            }
-
-            return this.View("WebSubClient", model);
-        }
     }
 }
 

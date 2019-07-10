@@ -14,7 +14,7 @@
     <h1 align="center">FHIRcast Sandbox</h1>
     <div id="root" class="container-fluid" style="background-color:darkgray;">
         <div style="position:fixed;top:0;left:25%;width:50%; display: none" id="alertPlaceholder">
-            <div class="alert alert-warning alert-dismissable">
+            <div id="alertMessageDiv" class="alert alert-warning alert-dismissable">
                 <a class="close" data-dismiss="alert">×</a>
                 <span id="alertText"></span>
             </div>
@@ -224,7 +224,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @if (Model.SubscriptionsToHub != null)
+                                    @*@if (Model.SubscriptionsToHub != null)
                                     {
                                         @foreach (var item in Model.SubscriptionsToHub)
                                         {
@@ -234,7 +234,7 @@
                                                 <td>@String.Join(",", item.Events)</td>
                                             </tr>
                                         }
-                                    }
+                                    }*@
                                 </tbody>
                             </table>
                         </fieldset>

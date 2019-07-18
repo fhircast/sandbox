@@ -27,7 +27,7 @@ connection.on("ReceivedNotification", (notification) => {
 
 // Handles adding a verified subscription we created
 connection.on("AddSubscription", (subscription) => {
-    popupNotification(subscription);
+    popupNotification("Verified subscription to " + subscription.topic);
 
     var subTable = getSubscriptionTable(false).getElementsByTagName('tbody')[0];
     addSubscriptionToTable(subTable, subscription);

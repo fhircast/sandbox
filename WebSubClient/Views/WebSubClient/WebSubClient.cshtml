@@ -102,7 +102,7 @@
                                             <thead class="thead-dark">
                                                 <tr><td colspan="4" align="center">Client's Subscribers</td></tr>
                                                 <tr>
-                                                    <td>Hub URL</td>
+                                                    <td>Callback URL</td>
                                                     <td>Topic</td>
                                                     <td>Events</td>
                                                 </tr>
@@ -123,58 +123,44 @@
                                     {
                                         <div class="row" align="center">
                                             <div class="col" id="contextFields">
+                                                @* Patient fields *@
+                                                <div class="row">
+                                                    <div class="col">
+                                                        <h3>Patient</h3>
+                                                        <label>Patient ID</label>
+                                                        <input type="text" id="patientID" class="form-control" />
+                                                        <br />
+                                                    </div>
+                                                </div>
 
+                                                @* Study fields *@
+                                                <div class="row">
+                                                    <div class="col">
+                                                        <h3>ImagingStudy</h3>
+                                                        <label>Accession Number</label>
+                                                        <input type="text" id="accessionNumber" class="form-control" />
+                                                        <br />
+                                                    </div>
+                                                </div>
+
+                                                <div class="row">
+                                                    <div class="col">
+                                                        <label>Topic</label>
+                                                        <input type="text" id="topic" class="form-control" readonly />
+                                                        <br />
+                                                    </div>
+                                                </div>
+
+                                                <div class="row">
+                                                    <div class="col">
+                                                        <label>Event</label>
+                                                        <input type="text" id="event" class="form-control" />
+                                                        <br />
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        @*<div class="row">
-                                                <div class="col">
-                                                    <div class="form-group">
-                                                        <label>User Identifier</label>
-                                                        <br />
-                                                        <input type="text" name="userIdentifier" id="userIdentifier" class="form-control" />
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label>Patient Identifier</label>
-                                                        <br />
-                                                        <input type="text" name="patientIdentifier" id="patientIdentifier" class="form-control" />
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label>Patient Id Issuer</label>
-                                                        <br />
-                                                        <input type="text" name="patientIdIssuer" id="patientIdIssuer" class="form-control" />
-                                                    </div>
-                                                </div>
-                                                <div class="col">
-                                                    <div class="form-group">
-                                                        <label>Accession Number</label>
-                                                        <br />
-                                                        <input type="text" name="accessionNumber" id="accessionNumber" class="form-control" />
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label>Accession Number Group</label>
-                                                        <br />
-                                                        <input type="text" name="accessionNumberGroup" id="accessionNumberGroup" class="form-control" />
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label>Study Id</label>
-                                                        <br />
-                                                        <input type="text" name="studyId" id="studyId" class="form-control" />
-                                                    </div>
-                                                </div>
-                                            </div>
-
-
-                                            <div class="form-group">
-                                                <label>Topic</label>
-                                                <br />
-                                                <input type="text" name="topic" id="topic" class="form-control" />
-                                            </div>
-                                            <div class="form-group">
-                                                <label>Event</label>
-                                                <br />
-                                                <input type="text" name="event" id="event" class="form-control" />
-                                            </div>*@
                                         <div class="form-group">
                                             <input type="submit" value="Update" class="btn btn-secondary" />
                                         </div>

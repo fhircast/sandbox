@@ -6,7 +6,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace FHIRcastSandbox.WebSubClient {
+namespace FHIRcastSandbox.WebSubClient
+{
     public class Startup {
         public Startup(IConfiguration configuration) {
             Configuration = configuration;
@@ -19,8 +20,10 @@ namespace FHIRcastSandbox.WebSubClient {
             services.AddMvc();
             services.AddSignalR();
             services.AddSingleton<ClientSubscriptions>();
+            services.AddSingleton(typeof(WebSubClientHub));
+            services.AddSingleton(typeof(InternalHubClient));
+
             services.AddTransient<IHubSubscriptions, HubSubscriptions>();
-            services.AddTransient(typeof(WebSubClientHub));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -41,7 +44,7 @@ namespace FHIRcastSandbox.WebSubClient {
             //});
 
             app.UseSignalR(routes => {
-                routes.MapHub<FHIRcastSandbox.Hubs.WebSubClientHub>("/websubclienthub");
+                routes.MapHub<WebSubClientHub>("/websubclienthub");
             });
 
             app.UseMvc();

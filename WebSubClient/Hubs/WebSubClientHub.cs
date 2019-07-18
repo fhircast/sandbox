@@ -9,6 +9,8 @@ using Microsoft.Extensions.Configuration;
 using System.Net.Http;
 using System.Text;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.SignalR.Client;
+using FHIRcastSandbox.WebSubClient.Hubs;
 
 namespace FHIRcastSandbox.Hubs
 {
@@ -23,12 +25,23 @@ namespace FHIRcastSandbox.Hubs
         private readonly IConfiguration config;
         private readonly IHubContext<WebSubClientHub, IWebSubClient> webSubClientHubContext;
 
-        public WebSubClientHub(ILogger<WebSubClientHub> logger, ClientSubscriptions clientSubscriptions, IHubSubscriptions hubSubscriptions, IConfiguration config, IHubContext<WebSubClientHub, IWebSubClient> hubContext) {
+        private readonly InternalHubClient internalHubClient;
+     
+        public WebSubClientHub(ILogger<WebSubClientHub> logger, ClientSubscriptions clientSubscriptions, IHubSubscriptions hubSubscriptions, IConfiguration config, IHubContext<WebSubClientHub, IWebSubClient> hubContext, InternalHubClient internalHubClient) {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.clientSubscriptions = clientSubscriptions ?? throw new ArgumentNullException(nameof(clientSubscriptions));
             this.hubSubscriptions = hubSubscriptions ?? throw new ArgumentNullException(nameof(hubSubscriptions));
             this.config = config;
             webSubClientHubContext = hubContext;
+            this.internalHubClient = internalHubClient;
+
+            this.internalHubClient.SubscriberAdded += InternalHubClient_SubscriberAdded;
+        }
+
+        private void InternalHubClient_SubscriberAdded(object sender, Subscription subscription)
+        {
+            logger.LogCritical("InternalHubClient_SubscriberAdded event raised");
+            AddSubscriber(Context.ConnectionId, subscription);
         }
 
         public async Task Subscribe(string subscriptionUrl, string topic, string events, string[] httpHeaders) {
@@ -86,8 +99,7 @@ namespace FHIRcastSandbox.Hubs
             await this.hubSubscriptions.Unsubscribe(sub);
 
             //Remove subscription
-            //await this.Clients.Clients(clientConnectionId).SendAsync("updatedSubscriptions", this.clientSubscriptions.GetClientSubscriptions(clientConnectionId));
-            //this.Clients.Client(clientConnectionId).AddSubscription()
+            //TODO: implement this using RemoveSubscription
         }
 
         /// <summary>
@@ -148,6 +160,7 @@ namespace FHIRcastSandbox.Hubs
         public string GetTopic()
         {
             this.logger.LogDebug($"Sending topic {this.Context.ConnectionId} up to client");
+            internalHubClient.RegisterTopic(Context.ConnectionId);
             return this.Context.ConnectionId;
         }
 

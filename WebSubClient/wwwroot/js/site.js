@@ -6,11 +6,6 @@ const connection = new signalR.HubConnectionBuilder()
 
 var clientTopic = "";
 
-connection.AlertMessage = function (message) {
-    console.debug("Alert message " + message);
-    popupNotification(message);
-};
-
 connection.start()
     .then(function () {
         connection.invoke("getTopic")
@@ -23,60 +18,11 @@ connection.start()
     .catch(err => handleError(err));
 
 //#region SignalR Connection Functions
-connection.on("notification", (message) => {
-    console.debug(message);
-
-    $(".topic").val(message.event["hub.topic"]);
-    $(".event").val(message.event["hub.event"]);
-
-    for (var i = 0; i < message.event.context.length; i++) {
-        var context = message.event.context[i];
-        if (context.key === "patient") {
-            $(".patientId").val(context.resource.id);
-        }
-        if (context.key === "study") {
-            $(".accession").val(context.resource.id);
-        }
-    }
-});
-
-connection.on("error", (errorMsg) => {
-    alert("Error on server: /n" + errorMsg);
-});
-
-connection.on("updatedSubscriptions", (subscriptions) => {
-    console.debug("updated subscriptions called with " + subscriptions);
-    var subTable = getSubscriptionTable(false).getElementsByTagName('tbody')[0];
-    subTable.innerHTML = "";
-
-    for (var i = 0; i < subscriptions.length; i++) {
-        //console.debug(subscriptions[i]);
-        // Continue if subscription is unsubscribed
-        if (subscriptions[i].mode == 1) {
-            continue;
-        }
-        addSubscriptionToTable(subTable, subscriptions[i]);
-    }
-});
-
-connection.on("updatedSubscribers", (subscriptions) => {
-    console.debug("updated subscriptions called with " + subscriptions);
-    var subTable = getSubscriptionTable(true).getElementsByTagName('tbody')[0];
-    subTable.innerHTML = "";
-
-    for (var i = 0; i < subscriptions.length; i++) {
-        console.debug(subscriptions[i]);
-        // Continue if subscription is unsubscribed
-        if (subscriptions[i].mode == 1) {
-            continue;
-        }
-        addSubscriptionToTable(subTable, subscriptions[i]);
-    }
-});
-
 // Handles receiving a notification from one of our subscriptions
 connection.on("ReceivedNotification", (notification) => {
-    popupNotification(notification);
+    popupNotification("Received notification");
+
+    //TODO: handle updating client with notification details
 });
 
 // Handles adding a verified subscription we created
@@ -89,7 +35,10 @@ connection.on("AddSubscription", (subscription) => {
 
 // Handles adding a verified subscription to this client
 connection.on("AddSubscriber", (subscription) => {
-    popupNotification(subscription);
+    popupNotification("New subscriber " + subscription.callback);
+
+    var subTable = getSubscriptionTable(true).getElementsByTagName('tbody')[0];
+    addSubscriptionToTable(subTable, subscription);
 });
 
 // Handles receiving a message from the hub to be displayed to the user
@@ -108,15 +57,6 @@ function getSubscriptionTable(subscribers) {
     return document.getElementById(tableID);
 }
 
-function unsubscribe(topic) {
-    console.debug("unsubscribing from " + topic);
-
-    connection
-        .invoke(
-            "unsubscribe", topic)
-        .catch(e => console.error(e));
-}
-
 function addSubscriptionToTable(table, subscription) {
     var newRow = table.insertRow(table.rows.length);
 
@@ -125,7 +65,7 @@ function addSubscriptionToTable(table, subscription) {
     var eventCell = newRow.insertCell(2);
     var unsubscribeCell = newRow.insertCell(3);
 
-    var urlText = document.createTextNode(subscription.hubURL.url);
+    var urlText = document.createTextNode(subscription.hubURL ? subscription.hubURL.url : subscription.callback);   
     var topicText = document.createTextNode(subscription.topic);
     var eventsText = document.createTextNode(subscription.events.join(","));
     var unsubscribeBtn = document.createElement('input');
@@ -210,6 +150,16 @@ $("#subscribe").submit(function (e) {
     e.preventDefault();
 });
 
+// Event handler function for Unsubscribe buttons in subscription table.
+function unsubscribe(topic) {
+    console.debug("unsubscribing from " + topic);
+
+    connection
+        .invoke(
+            "unsubscribe", topic)
+        .catch(e => console.error(e));
+}
+
 $("#update").submit(function (e) {
     var clientModel = {
         PatientID: this["patientID"].value,
@@ -228,6 +178,8 @@ $("#update").submit(function (e) {
 //#endregion
 
 //#region Alert Functions
+//These functions handle the popup header notification. Use it for minimalist notifications that don't require
+//user input since the popup will fade and disappear after a short time. 
 function handleError(error) {
     console.log(error);
     popupNotification(error.message);

@@ -1,4 +1,6 @@
-﻿using FHIRcastSandbox.Model;
+﻿
+
+using FHIRcastSandbox.Model;
 using Newtonsoft.Json.Linq;
 using System;
 using Xunit;
@@ -7,11 +9,31 @@ namespace FHIRcastSandbox
 {
     public class NotificationTests
     {
+        #region Unit Tests
         [Fact]
-        public void JsonConvertNotification_SingleResource_PropertFormat_Test()
+        public void EqualNotifications_ConfirmEquality_Test()
+        {
+            Notification notification1 = CreateNotification(1);
+            Notification notification2 = CreateNotification(1);
+            notification2.Id = notification1.Id;
+
+            Assert.True(notification1.Equals(notification2));
+        }
+
+        [Fact]
+        public void UnequalNotifications_ConfirmInequality_Test()
+        {
+            Notification notification1 = CreateNotification(1);
+            Notification notification2 = CreateNotification(1); // Create notification uses a new GUID each time
+
+            Assert.False(notification1.Equals(notification2));
+        }
+
+        [Fact]
+        public void Notification_SingleResource_ConvertToJSONString_Test()
         {
             Notification notification = CreateNotification(1);
-            string jsonBody = notification.ToJson(); // SingleResourceNotificationJSONString();
+            string jsonBody = notification.ToJson();
 
             string error;
 
@@ -22,10 +44,10 @@ namespace FHIRcastSandbox
         }
 
         [Fact]
-        public void JsonConvertNotification_MultipleResources_PropertFormat_Test()
+        public void Notification_MultipleResources_ConvertToJSONString_Test()
         {
             Notification notification = CreateNotification(2);
-            string jsonBody = notification.ToJson(); // SingleResourceNotificationJSONString();
+            string jsonBody = notification.ToJson();
 
             string error;
 
@@ -34,7 +56,23 @@ namespace FHIRcastSandbox
             Assert.True(ValidId(jsonBody, out error), "Error validating id: " + error);
             Assert.True(ValidEventObject(jsonBody, out error), "Error validating event: " + error);
 
+        } 
+
+        [Fact]
+        public void Notification_SingleResource_ConvertFromJSONString_Test()
+        {
+            Notification notification = CreateNotification(1);
+            string json = notification.ToJson();
+
+            Notification notificationFromJson = Notification.FromJson(json);
+
+
+            Assert.True(notification.Equals(notificationFromJson, true));
         }
+
+        #endregion
+
+
 
         private bool ValidJson(string jsonBody, out string error)
         {

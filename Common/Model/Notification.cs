@@ -3,7 +3,9 @@ using Hl7.Fhir.Model;
 using Hl7.Fhir.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -15,13 +17,16 @@ namespace FHIRcastSandbox.Model
     /// </summary>
     public class Notification : ModelBase
     {
+        #region Properties
         [JsonProperty(PropertyName = "timestamp")]
         public DateTime Timestamp { get; set; }
         [JsonProperty(PropertyName = "id")]
         public string Id { get; set; }
         [JsonProperty(PropertyName = "event")]
-        public NotificationEvent Event { get; set; } = new NotificationEvent();
+        public NotificationEvent Event { get; set; } = new NotificationEvent(); 
+        #endregion
 
+        #region JSON Conversions
         /// <summary>
         /// Creates the JSON string for this notification object as specified by the FHIRcast specs
         /// </summary>
@@ -55,13 +60,83 @@ namespace FHIRcastSandbox.Model
             }
         }
 
+        public static Notification FromJson(string jsonString)
+        {
+            Notification notification = new Notification();
+
+            try
+            {
+                JObject jObject = JObject.Parse(jsonString);
+
+                notification.Timestamp = DateTime.Parse(jObject["timestamp"].ToString());
+                notification.Id = jObject["id"].ToString();
+
+                JObject eventObj = jObject["event"].ToObject<JObject>();
+                notification.Event = NotificationEvent.FromJson(eventObj);
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+
+            return notification;
+        } 
+        #endregion
+
+        #region Overrides
+        public override bool Equals(object obj)
+        {
+            try
+            {
+                Notification that = (Notification)obj;
+
+                if (this.Id != that.Id) return false;
+                // For now just check Id but maybe add more checks later
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public bool Equals(object obj, bool deepEquals)
+        {
+            if (!deepEquals)
+            {
+                return this.Equals(obj);
+            }
+
+            // Check id to start
+            if (!this.Equals(obj))
+            {
+                return false;
+            }
+
+            try
+            {
+                Notification that = (Notification)obj;
+
+                if (this.Timestamp.Equals(that.Timestamp)) return false;
+                if (!this.Event.Equals(that.Event)) return false;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         public override string ToString()
         {
             string newline = Environment.NewLine;
             return $"timestamp: {Timestamp} {newline}" +
                 $"id: {Id} {newline}" +
                 $"event: {Event.ToString()}";
-        }
+        } 
+        #endregion      
     }
 
     /// <summary>
@@ -70,6 +145,7 @@ namespace FHIRcastSandbox.Model
     /// </summary>
     public class NotificationEvent
     {
+        #region Properties
         [ModelBinder(Name = "hub.topic")]
         [JsonProperty(PropertyName = "hub.topic")]
         public string Topic { get; set; }
@@ -79,8 +155,10 @@ namespace FHIRcastSandbox.Model
         public string Event { get; set; }
 
         [JsonProperty(PropertyName = "context")]
-        public Resource[] Context { get; set; }
+        public Resource[] Context { get; set; } 
+        #endregion
 
+        #region JSON Conversions
         /// <summary>
         /// Creates the JSON string for this notification event object as specified by the FHIRcast specs
         /// </summary>
@@ -130,12 +208,94 @@ namespace FHIRcastSandbox.Model
             }
         }
 
+        internal static NotificationEvent FromJson(JObject eventObj)
+        {
+            NotificationEvent notificationEvent = new NotificationEvent();
+
+            try
+            {
+                notificationEvent.Topic = eventObj["hub.topic"].ToString();
+                notificationEvent.Event = eventObj["hub.event"].ToString();
+
+                List<Resource> resources = new List<Resource>();
+                JArray context = JArray.FromObject(eventObj["context"]);
+                foreach (JObject resource in context)
+                {
+                    JObject fhirResource = resource["resource"].ToObject<JObject>();
+                    if (resource["key"].ToString() == "patient")
+                    {
+                        Patient patient = new Patient();
+                        patient.Id = fhirResource["id"].ToString();
+                        resources.Add(patient);
+                    }
+                    else if (resource["key"].ToString() == "imagingstudy")
+                    {
+                        ImagingStudy study = new ImagingStudy();
+                        study.Id = fhirResource["id"].ToString();
+                        resources.Add(study);
+                    }
+                }
+
+                notificationEvent.Context = resources.ToArray();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+
+            return notificationEvent;
+        }
+        #endregion
+
+        #region Overrides
+        public override bool Equals(object obj)
+        {
+            try
+            {
+                NotificationEvent that = (NotificationEvent)obj;
+
+                if (this.Topic != that.Topic) return false;
+                if (this.Event != that.Event) return false;
+
+                // Verify context equality
+                if (this.Context.Length != that.Context.Length) return false;
+                foreach (Resource thisResource in this.Context)
+                {
+                    bool included = false;
+                    foreach (Resource thatResource in that.Context)
+                    {
+                        if (thisResource.ResourceType == thatResource.ResourceType)
+                        {
+                            if (thisResource.Id == thatResource.Id)
+                            {
+                                included = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!included) return false;
+                }
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         public override string ToString()
         {
             string newline = Environment.NewLine;
+            string context = "";
+            foreach (Resource resource in Context)
+            {
+                context += $"{resource.ResourceType}: {resource.Id} {newline}";
+            }
             return $"hub.topic: {Topic} {newline}" +
                 $"hub.event: {Event} {newline}" +
-                $"context: {Context.ToString()}";
-        }
+                $"context: {context}";
+        } 
+        #endregion
     }
 }

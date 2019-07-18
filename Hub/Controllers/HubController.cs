@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using FHIRcastSandbox.Model;
 using FHIRcastSandbox.Rules;
 using Hangfire;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 
 namespace FHIRcastSandbox.Controllers {
@@ -68,8 +71,15 @@ namespace FHIRcastSandbox.Controllers {
         /// <returns></returns>
         [Route("{topicId}")]
         [HttpPost]
-        public async Task<IActionResult> Notify(string topicId, [FromBody] Notification notification)
+        //public async Task<IActionResult> Notify(string topicId, [FromBody] Notification notification)
+        public async Task<IActionResult> Notify(string topicId) //, [FromBody] Notification notification)
         {
+            Notification notification;
+            using (StreamReader reader = new StreamReader(Request.Body, Encoding.UTF8))
+            {
+                notification = Notification.FromJson(await reader.ReadToEndAsync());
+            }            
+
             this.logger.LogInformation($"Got notification from client: {notification}");
 
             var subscriptions = this.subscriptions.GetSubscriptions(notification.Event.Topic, notification.Event.Event);

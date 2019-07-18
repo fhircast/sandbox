@@ -17,14 +17,17 @@ namespace FHIRcastSandbox.Model
 
         [BindRequired]
         [URLNameOverride("hub.callback")]
+        [ModelBinder(Name = "hub.callback")]
         public string Callback { get; set; }
 
         [BindRequired]
         [URLNameOverride("hub.mode")]
+        [ModelBinder(Name = "hub.mode")]
         public SubscriptionMode? Mode { get; set; }
 
         [BindRequired]
         [URLNameOverride("hub.topic")]
+        [ModelBinder(Name = "hub.topic")]
         public string Topic { get; set; }
 
         [BindRequired]
@@ -50,6 +53,7 @@ namespace FHIRcastSandbox.Model
     public abstract class SubscriptionWithLease : SubscriptionBase
     {
         [URLNameOverride("hub.lease_seconds")]
+        [ModelBinder(Name = "hub.lease_seconds")]
         public int? Lease_Seconds { get; set; }
 
         [BindNever, JsonIgnore]
@@ -60,6 +64,7 @@ namespace FHIRcastSandbox.Model
     {
         [BindRequired]
         [URLNameOverride("hub.secret")]
+        [ModelBinder(Name = "hub.secret")]
         public string Secret { get; set; }
 
         [BindNever, JsonIgnore]
@@ -112,15 +117,18 @@ namespace FHIRcastSandbox.Model
     public class SubscriptionCancelled : SubscriptionBase
     {
         [URLNameOverride("hub.reason")]
+        [ModelBinder(Name = "hub.reason")]
         public string Reason { get; set; }
     }
 
     public class SubscriptionVerification : SubscriptionWithLease
     {
         [URLNameOverride("hub.challenge")]
+        [ModelBinder(Name = "hub.challenge")]
         public string Challenge { get; set; }
 
         [URLNameOverride("hub.reason")]
+        [ModelBinder(Name = "hub.reason")]
         public string Reason { get; set; }
     }
 

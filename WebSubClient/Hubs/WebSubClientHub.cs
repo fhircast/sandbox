@@ -40,7 +40,6 @@ namespace FHIRcastSandbox.Hubs
 
         private void InternalHubClient_SubscriberAdded(object sender, Subscription subscription)
         {
-            logger.LogCritical("InternalHubClient_SubscriberAdded event raised");
             AddSubscriber(Context.ConnectionId, subscription);
         }
 

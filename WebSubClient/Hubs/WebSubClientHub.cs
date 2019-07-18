@@ -7,26 +7,28 @@ using System.Threading.Tasks;
 using System;
 using Microsoft.Extensions.Configuration;
 using System.Net.Http;
-using Newtonsoft.Json;
 using System.Text;
+using System.Collections.Generic;
 
 namespace FHIRcastSandbox.Hubs
 {
     /// <summary>
-    /// This is a SignalR hub, not ot be confused with a FHIRcast hub.
+    /// This is a SignalR hub for the js client, not to be confused with a FHIRcast hub.
     /// </summary>
     /// <seealso cref="Microsoft.AspNetCore.SignalR.Hub" />
-    public class WebSubClientHub : Hub {
+    public class WebSubClientHub : Hub<IWebSubClient> {
         private readonly ILogger<WebSubClientHub> logger;
         private readonly ClientSubscriptions clientSubscriptions;
         private readonly IHubSubscriptions hubSubscriptions;
         private readonly IConfiguration config;
+        private readonly IHubContext<WebSubClientHub, IWebSubClient> webSubClientHubContext;
 
-        public WebSubClientHub(ILogger<WebSubClientHub> logger, ClientSubscriptions clientSubscriptions, IHubSubscriptions hubSubscriptions, IConfiguration config) {
+        public WebSubClientHub(ILogger<WebSubClientHub> logger, ClientSubscriptions clientSubscriptions, IHubSubscriptions hubSubscriptions, IConfiguration config, IHubContext<WebSubClientHub, IWebSubClient> hubContext) {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.clientSubscriptions = clientSubscriptions ?? throw new ArgumentNullException(nameof(clientSubscriptions));
             this.hubSubscriptions = hubSubscriptions ?? throw new ArgumentNullException(nameof(hubSubscriptions));
             this.config = config;
+            webSubClientHubContext = hubContext;
         }
 
         public async Task Subscribe(string subscriptionUrl, string topic, string events, string[] httpHeaders) {
@@ -82,7 +84,10 @@ namespace FHIRcastSandbox.Hubs
 
             this.clientSubscriptions.PendingRemovalSubscription(clientConnectionId, topic);
             await this.hubSubscriptions.Unsubscribe(sub);
-            await this.Clients.Clients(clientConnectionId).SendAsync("updatedSubscriptions", this.clientSubscriptions.GetClientSubscriptions(clientConnectionId));
+
+            //Remove subscription
+            //await this.Clients.Clients(clientConnectionId).SendAsync("updatedSubscriptions", this.clientSubscriptions.GetClientSubscriptions(clientConnectionId));
+            //this.Clients.Client(clientConnectionId).AddSubscription()
         }
 
         /// <summary>
@@ -104,21 +109,28 @@ namespace FHIRcastSandbox.Hubs
                 Timestamp = DateTime.Now,
             };
 
+            List<Hl7.Fhir.Model.Resource> resources = new List<Hl7.Fhir.Model.Resource>();
+
             Hl7.Fhir.Model.Patient patient = new Hl7.Fhir.Model.Patient();
             patient.Id = model.PatientID;
+            if (patient.Id != "")
+            {
+                resources.Add(patient);
+            }
 
             Hl7.Fhir.Model.ImagingStudy imagingStudy = new Hl7.Fhir.Model.ImagingStudy();
-            imagingStudy.Accession = new Hl7.Fhir.Model.Identifier("accession", model.AccessionNumber);
+            imagingStudy.Id = model.AccessionNumber;    //This probably isn't exactly right, but is useful for testing
+            //imagingStudy.Accession = new Hl7.Fhir.Model.Identifier("accession", model.AccessionNumber);
+            if (imagingStudy.Id != "")
+            {
+                resources.Add(imagingStudy);
+            }
 
             NotificationEvent notificationEvent = new NotificationEvent()
             {
                 Topic = topic,
                 Event = eventName,
-                Context = new Hl7.Fhir.Model.Resource[]
-                {
-                    patient,
-                    imagingStudy
-                }
+                Context = resources.ToArray()
             };
             notification.Event = notificationEvent;
 
@@ -129,8 +141,40 @@ namespace FHIRcastSandbox.Hubs
 
             // Send notification and await response
             this.logger.LogDebug($"Sending notification to {subscriptionUrl}/{topic}: {notification.ToString()}");
-            var response = await httpClient.PostAsync($"{subscriptionUrl}/{topic}", new StringContent(JsonConvert.SerializeObject(notification), Encoding.UTF8, "application/json"));
+            var response = await httpClient.PostAsync($"{subscriptionUrl}/{topic}", new StringContent(notification.ToJson(), Encoding.UTF8, "application/json"));
             response.EnsureSuccessStatusCode();
         }
+
+        public string GetTopic()
+        {
+            this.logger.LogDebug($"Sending topic {this.Context.ConnectionId} up to client");
+            return this.Context.ConnectionId;
+        }
+
+        #region Calls To Client
+        public async Task ReceivedNotification(string connectionId, Notification notification)
+        {
+            logger.LogDebug($"ReceivedNotification for {connectionId}: {notification.ToString()}");
+            await webSubClientHubContext.Clients.Client(connectionId).ReceivedNotification(notification);
+        }
+
+        public async Task AddSubscription(string connectionId, SubscriptionWithHubURL subscription)
+        {
+            logger.LogDebug($"Adding subscription for {connectionId}: {subscription.ToString()}");
+            await webSubClientHubContext.Clients.Client(connectionId).AddSubscription(subscription);
+        }
+
+        public async Task AddSubscriber(string connectionId, Subscription subscription)
+        {
+            logger.LogDebug($"Adding subscriber for {connectionId}: {subscription.ToString()}");
+            await webSubClientHubContext.Clients.Client(connectionId).AddSubscriber(subscription);
+        }
+
+        public async Task AlertMessage(string connectionId, string message)
+        {
+            logger.LogDebug($"Alerting {connectionId}: {message}");
+            await webSubClientHubContext.Clients.Client(connectionId).AlertMessage(message);
+        }
+        #endregion
     }
 }

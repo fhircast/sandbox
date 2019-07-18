@@ -1,112 +1,26 @@
 ﻿// Write your JavaScript code.
-//#region Classes
-class ContextResource {
-    name = "";
-    properties = [];
-
-    constructor(resourceJson) {
-        this.name = resourceJson['name'];
-        for (var p in resourceJson.properties) {
-            var property = new Array();
-            property[p] = resourceJson.properties[p];
-            this.addProperty(property);
-        }
-    }
-
-    addProperty(property) {
-        this.properties.push(property);
-    }
-}
-
-class ClientContext {
-    resources = [];
-
-    addResource(resourceJson) {
-        var resource = new ContextResource(resourceJson);
-        this.resources.push(resource);
-    }
-
-    updateClientUI() {
-        var contextFields = document.getElementById("contextFields");
-        contextFields.innerHTML = "";
-
-        // Parse JSON
-        var htmlString = "";
-        for (var i = 0; i < this.resources.length; i++) {
-            var resource = this.resources[i];
-
-            htmlString += startRow();
-            htmlString += startCol();
-
-            htmlString = addToHTML(htmlString, '<h3>' + resource.name + '</h3>');
-
-            for (var j = 0; j < resource.properties.length; j++) {
-                var property = resource.properties[j];
-                for (var key in property) {
-                    htmlString = addToHTML(htmlString, '<label>' + property[key] + '</label>');
-                    htmlString = addToHTML(htmlString, '<input type="text" id="' + key + '" class="form-control" /></br >');
-                }
-            }
-
-            htmlString += endDiv();
-            htmlString += endDiv();
-        }
-
-        htmlString += startRow();
-        htmlString += startCol();
-        htmlString += '<label>Topic</label>';
-        htmlString += '<input type="text" id="topic" class="form-control" readonly/>';
-        htmlString += endDiv();
-        htmlString += endDiv();
-
-        htmlString += startRow();
-        htmlString += startCol();
-        htmlString += '<label>Event</label>';
-        htmlString += '<input type="text" id="event" class="form-control" />';
-        htmlString += endDiv();
-        htmlString += endDiv();
-
-        contextFields.innerHTML = htmlString;
-    }
-
-    callbackFunction(clientContext, httpRequest) {
-        var clientDefinition = JSON.parse(httpRequest.responseText);
-
-        for (var i = 0; i < clientDefinition.Resources.length; i++) {
-            clientContext.addResource(clientDefinition.Resources[i]);
-        }
-
-        clientContext.updateClientUI();
-    }
-
-    constructor() {
-        var request = new XMLHttpRequest();
-        var callback = this.callbackFunction;
-        var clientContext = this;
-        request.open("GET", "../data/clientContextDefinition.json");
-        request.send(null);
-        request.onreadystatechange = function () {
-            if (this.readyState == 4 && this.status == 200) {
-                callback(clientContext, this);
-            }
-        };
-    }
-}
-//#endregion
-
 const connection = new signalR.HubConnectionBuilder()
     .withUrl("/websubclienthub")
     .configureLogging(signalR.LogLevel.Information)
     .build();
 
-connection
-    .start()
-    .catch(err => console.error(err.toString()));
+var clientTopic = "";
 
-var clientTopic = "topic1";
+connection.AlertMessage = function (message) {
+    console.debug("Alert message " + message);
+    popupNotification(message);
+};
 
-// Initiate session context fields
-var context = new ClientContext();
+connection.start()
+    .then(function () {
+        connection.invoke("getTopic")
+            .then((topic) => {
+                clientTopic = topic;
+                document.getElementById("topic").value = clientTopic;
+            })
+            .catch(e => handleError(e));
+    })
+    .catch(err => handleError(err));
 
 //#region SignalR Connection Functions
 connection.on("notification", (message) => {
@@ -136,7 +50,7 @@ connection.on("updatedSubscriptions", (subscriptions) => {
     subTable.innerHTML = "";
 
     for (var i = 0; i < subscriptions.length; i++) {
-        console.debug(subscriptions[i]);
+        //console.debug(subscriptions[i]);
         // Continue if subscription is unsubscribed
         if (subscriptions[i].mode == 1) {
             continue;
@@ -159,26 +73,30 @@ connection.on("updatedSubscribers", (subscriptions) => {
         addSubscriptionToTable(subTable, subscriptions[i]);
     }
 });
+
+// Handles receiving a notification from one of our subscriptions
+connection.on("ReceivedNotification", (notification) => {
+    popupNotification(notification);
+});
+
+// Handles adding a verified subscription we created
+connection.on("AddSubscription", (subscription) => {
+    popupNotification(subscription);
+
+    var subTable = getSubscriptionTable(false).getElementsByTagName('tbody')[0];
+    addSubscriptionToTable(subTable, subscription);
+});
+
+// Handles adding a verified subscription to this client
+connection.on("AddSubscriber", (subscription) => {
+    popupNotification(subscription);
+});
+
+// Handles receiving a message from the hub to be displayed to the user
+connection.on("AlertMessage", (message) => {
+    popupNotification(message);
+});
 //#endregion
-
-//#region HTML Functions
-function startRow() {
-    return '<div class="row">';
-}
-
-function startCol() {
-    return '<div class="col">';
-}
-
-function endDiv() {
-    return '</div>';
-}
-
-function addToHTML(htmlString, contentToAdd) {
-    return htmlString + contentToAdd;
-}
-//#endregion
-
 
 function getSubscriptionTable(subscribers) {
     var tableID = "";
@@ -293,42 +211,9 @@ $("#subscribe").submit(function (e) {
 });
 
 $("#update").submit(function (e) {
-    let sessionContext = {
-
-        'topic': clientTopic,
-        'event': this["event"].value,
-    };
-    var resources = [];
-    var count = 0;
-    for (var i = 0; i < context.resources.length; i++) {
-        var resource = context.resources[i];
-        var resourceContext = {};
-        var hasData = false;
-        for (var j = 0; j < resource.properties.length; j++) {
-            var property = resource.properties[j];
-            for (var key in property) {
-                if (this[key].value !== "") {
-                    resourceContext[key] = this[key].value;
-                    hasData = true;
-                }
-            }
-        }
-        if (hasData) {
-            var temp = {};
-            temp[resource.name] = resourceContext;
-            //resourceContext['name'] = resource.name;
-            resources[count++] = temp; //resourceContext;
-        }
-    }
-    sessionContext['resources'] = resources;
-    var data = {
-        'action': 'event',
-        'context': sessionContext
-    };
-
     var clientModel = {
-        PatientID: '1234',
-        AccessionNumber: '5678'
+        PatientID: this["patientID"].value,
+        AccessionNumber: this["accessionNumber"].value
     };
 
     connection
@@ -341,10 +226,6 @@ $("#update").submit(function (e) {
     e.preventDefault();
 });
 //#endregion
-
-function getCurrentContext() {
-
-}
 
 //#region Alert Functions
 function handleError(error) {

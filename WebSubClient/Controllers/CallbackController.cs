@@ -5,19 +5,24 @@ using FHIRcastSandbox.WebSubClient.Rules;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace FHIRcastSandbox.WebSubClient.Controllers
 {
     [Route("callback")]
     public class CallbackController : Controller {
         private readonly ClientSubscriptions clientSubscriptions;
-        private readonly IHubContext<WebSubClientHub> webSubClientHubContext;
+        private readonly IHubContext<WebSubClientHub, IWebSubClient> webSubClientHubContext;
         private readonly IConfiguration config;
+        private readonly WebSubClientHub clientHub;
+        private readonly ILogger<CallbackController> logger;
 
-        public CallbackController(ClientSubscriptions clientSubscriptions, IHubContext<WebSubClientHub> webSubClientHubContext, IConfiguration config) {
+        public CallbackController(ClientSubscriptions clientSubscriptions, IHubContext<WebSubClientHub, IWebSubClient> webSubClientHubContext, IConfiguration config, WebSubClientHub hub, ILogger<CallbackController> logger) {
             this.clientSubscriptions = clientSubscriptions;
             this.webSubClientHubContext = webSubClientHubContext;
             this.config = config;
+            this.clientHub = hub;
+            this.logger = logger;
         }
 
         /// <summary>
@@ -33,13 +38,13 @@ namespace FHIRcastSandbox.WebSubClient.Controllers
             if (!this.config.GetValue("Settings:ValidateSubscriptionValidations", true)) {
                 return this.Content(verification.Challenge);
             }
-
+            
             var verificationValidation = this.clientSubscriptions.ValidateVerification(connectionId, verification);
 
             if (verification.Mode == SubscriptionMode.denied)
             {
                 this.clientSubscriptions.RemoveSubscription(connectionId, verification.Topic);
-                this.webSubClientHubContext.Clients.Clients(connectionId).SendAsync("error", verification.Reason);
+                this.clientHub.AlertMessage(connectionId, $"Error subscribing to {verification.Topic}: {verification.Reason}");
                 return this.Content("");
             }
             else
@@ -60,7 +65,8 @@ namespace FHIRcastSandbox.WebSubClient.Controllers
                         break;
                 }
 
-                this.webSubClientHubContext.Clients.Clients(connectionId).SendAsync("updatedSubscriptions", this.clientSubscriptions.GetClientSubscriptions(connectionId));
+                this.clientHub.AddSubscription(connectionId, new SubscriptionWithHubURL(this.clientSubscriptions.GetSubscription(connectionId, verification.Topic)));
+
                 return this.Content(verification.Challenge);
             }           
         }
@@ -76,8 +82,7 @@ namespace FHIRcastSandbox.WebSubClient.Controllers
             //If we do not have an active subscription matching the id then return a notfound error
             var clients = this.clientSubscriptions.GetSubscribedClients(notification);
 
-            await this.webSubClientHubContext.Clients.Clients(clients)
-                .SendAsync("notification", notification);
+            await this.clientHub.ReceivedNotification(clients[0], notification);
 
             return this.Ok();
         }

@@ -1,4 +1,6 @@
-﻿using FHIRcastSandbox.WebSubClient.Rules;
+﻿using FHIRcastSandbox.Hubs;
+using FHIRcastSandbox.WebSubClient.Hubs;
+using FHIRcastSandbox.WebSubClient.Rules;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -18,6 +20,7 @@ namespace FHIRcastSandbox.WebSubClient {
             services.AddSignalR();
             services.AddSingleton<ClientSubscriptions>();
             services.AddTransient<IHubSubscriptions, HubSubscriptions>();
+            services.AddTransient(typeof(WebSubClientHub));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

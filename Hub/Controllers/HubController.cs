@@ -80,8 +80,7 @@ namespace FHIRcastSandbox.Controllers
         /// <returns></returns>
         [Route("{topicId}")]
         [HttpPost]
-        //public async Task<IActionResult> Notify(string topicId, [FromBody] Notification notification)
-        public async Task<IActionResult> Notify(string topicId) //, [FromBody] Notification notification)
+        public async Task<IActionResult> Notify(string topicId)
         {
             Notification notification;
             using (StreamReader reader = new StreamReader(Request.Body, Encoding.UTF8))

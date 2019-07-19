@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System.IO;
+using System.Text;
+using System.Threading.Tasks;
 using FHIRcastSandbox.Hubs;
 using FHIRcastSandbox.Model;
 using FHIRcastSandbox.WebSubClient.Rules;
@@ -78,7 +80,15 @@ namespace FHIRcastSandbox.WebSubClient.Controllers
         /// <param name="notification">The notification.</param>
         /// <returns></returns>
         [HttpPost("{topicId}")]
-        public async Task<IActionResult> Notification(string topicId, [FromBody] Notification notification) {
+        public async Task<IActionResult> Notification(string topicId) { //, [FromBody] Notification notification) {
+            Notification notification;
+            using (StreamReader reader = new StreamReader(Request.Body, Encoding.UTF8))
+            {
+                notification = Model.Notification.FromJson(reader.ReadToEnd());
+            }
+
+            logger.LogDebug($"Received notification for {topicId}: {notification.ToString()}");
+
             //If we do not have an active subscription matching the id then return a notfound error
             var clients = this.clientSubscriptions.GetSubscribedClients(notification);
 

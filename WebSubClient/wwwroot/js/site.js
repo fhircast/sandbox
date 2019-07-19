@@ -1,4 +1,30 @@
 ﻿// Write your JavaScript code.
+
+
+//#region Event Definitions
+const eventResources = {
+    PATIENT: 'patient',
+    IMAGINGSTUDY: 'imagingstudy'
+}
+
+const eventActions = {
+    OPEN: 'open',
+    CLOSE: 'close'
+}
+
+class NotificationEvent {
+    resourceType = "";
+    actionType = "";
+
+    // Resource and action should be eventResources and eventActions types
+    constructor(resource, action) {
+        this.resourceType = resource;
+        this.actionType = action;
+    }
+}
+//#endregion
+
+
 const connection = new signalR.HubConnectionBuilder()
     .withUrl("/websubclienthub")
     .configureLogging(signalR.LogLevel.Information)
@@ -20,10 +46,35 @@ connection.start()
 //#region SignalR Connection Functions
 // Handles receiving a notification from one of our subscriptions
 connection.on("ReceivedNotification", (notification) => {
-    popupNotification("Received notification");
+    popupNotification("Received " + notification.event.event + " notification");
 
-    //TODO: handle updating client with notification details
+    let eventObj = parseNotificationIntoEventObj(notification);
+    var ctrl, value;
+
+    if (eventObj.resourceType == eventResources.PATIENT) {
+        ctrl = this["patientID"];        
+    } else if (eventObj.resourceType == eventResources.IMAGINGSTUDY) {
+        ctrl = this["accessionNumber"];
+    }
+
+    if (eventObj.actionType == eventActions.OPEN) {
+        value = notification.event.context[0].resource.id;  // Just assume the first resource for now.
+    } else if (eventObj.actionType == eventActions.CLOSE) {
+        value = "";
+    }
+
+    ctrl.value = value;
 });
+
+function parseNotificationIntoEventObj(notification) {
+    var eventString = notification.event.event;
+
+    // This parsing will change with the upcoming spec changes
+    var pieces = eventString.split("-");
+
+    let event = new NotificationEvent(pieces[1], pieces[0]);
+    return event;
+}
 
 // Handles adding a verified subscription we created
 connection.on("AddSubscription", (subscription) => {

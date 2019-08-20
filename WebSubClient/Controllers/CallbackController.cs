@@ -1,23 +1,30 @@
-﻿using System.Threading.Tasks;
+﻿using System.IO;
+using System.Text;
+using System.Threading.Tasks;
 using FHIRcastSandbox.Hubs;
 using FHIRcastSandbox.Model;
 using FHIRcastSandbox.WebSubClient.Rules;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace FHIRcastSandbox.WebSubClient.Controllers
 {
     [Route("callback")]
     public class CallbackController : Controller {
         private readonly ClientSubscriptions clientSubscriptions;
-        private readonly IHubContext<WebSubClientHub> webSubClientHubContext;
+        private readonly IHubContext<WebSubClientHub, IWebSubClient> webSubClientHubContext;
         private readonly IConfiguration config;
+        private readonly WebSubClientHub clientHub;
+        private readonly ILogger<CallbackController> logger;
 
-        public CallbackController(ClientSubscriptions clientSubscriptions, IHubContext<WebSubClientHub> webSubClientHubContext, IConfiguration config) {
+        public CallbackController(ClientSubscriptions clientSubscriptions, IHubContext<WebSubClientHub, IWebSubClient> webSubClientHubContext, IConfiguration config, WebSubClientHub hub, ILogger<CallbackController> logger) {
             this.clientSubscriptions = clientSubscriptions;
             this.webSubClientHubContext = webSubClientHubContext;
             this.config = config;
+            this.clientHub = hub;
+            this.logger = logger;
         }
 
         /// <summary>
@@ -25,60 +32,67 @@ namespace FHIRcastSandbox.WebSubClient.Controllers
         /// If the subscription matches one that we have sent out previously that hasn't been verified yet
         /// then return their challenge value, otherwise return a NotFound error response.
         /// </summary>
-        /// <param name="subscriptionId">ID of the subscription, part of the url</param>
+        /// <param name="connectionId">SignalR connectionId used in the callback URL</param>
         /// <param name="verification">Hub's verification response to our subscription attempt</param>
-        /// <returns></returns>
+        /// <returns>challenge parameter if subscription is verified</returns>
         [HttpGet("{connectionId}")]
-        public IActionResult SubscriptionVerification(string connectionId, [FromQuery] SubscriptionVerification hub) {
+        public IActionResult SubscriptionVerification(string connectionId, [FromQuery] SubscriptionVerification verification) {
             if (!this.config.GetValue("Settings:ValidateSubscriptionValidations", true)) {
-                return this.Content(hub.Challenge);
+                return this.Content(verification.Challenge);
             }
+            
+            var verificationValidation = this.clientSubscriptions.ValidateVerification(connectionId, verification);
 
-            var verificationValidation = this.clientSubscriptions.ValidateVerification(connectionId, hub);
-
-            if (hub.Mode == SubscriptionMode.denied)
+            if (verification.Mode == SubscriptionMode.denied)
             {
-                this.clientSubscriptions.RemoveSubscription(connectionId, hub.Topic);
-                this.webSubClientHubContext.Clients.Clients(connectionId).SendAsync("error", hub.Reason);
+                this.clientSubscriptions.RemoveSubscription(connectionId, verification.Topic);
+                this.clientHub.AlertMessage(connectionId, $"Error subscribing to {verification.Topic}: {verification.Reason}");
+                return this.Content("");
             }
             else
             {
                 switch (verificationValidation)
                 {
                     case SubscriptionVerificationValidation.IsPendingVerification:
-                        this.clientSubscriptions.ActivateSubscription(hub.Topic);
+                        this.clientSubscriptions.ActivateSubscription(verification.Topic);
                         break;
                     case SubscriptionVerificationValidation.DoesNotExist:
                         return this.NotFound();
                     case SubscriptionVerificationValidation.IsAlreadyActive:
                         break;
                     case SubscriptionVerificationValidation.IsPendingDeletion:
-                        this.clientSubscriptions.RemoveSubscription(connectionId, hub.Topic);
+                        this.clientSubscriptions.RemoveSubscription(connectionId, verification.Topic);
                         break;
                     default:
                         break;
                 }
 
-                this.webSubClientHubContext.Clients.Clients(connectionId).SendAsync("updatedSubscriptions", this.clientSubscriptions.GetClientSubscriptions(connectionId));
-                return this.Content(hub.Challenge);
-            }
+                this.clientHub.AddSubscription(connectionId, new SubscriptionWithHubURL(this.clientSubscriptions.GetSubscription(connectionId, verification.Topic)));
 
-            return this.Content("");
+                return this.Content(verification.Challenge);
+            }           
         }
 
         /// <summary>
-        /// Posts the specified subscription identifier.
+        /// A client we subscribed to is posting a notification to us
         /// </summary>
-        /// <param name="subscriptionId">The subscription identifier.</param>
+        /// <param name="topicId">The subscription identifier.</param>
         /// <param name="notification">The notification.</param>
         /// <returns></returns>
-        [HttpPost("{subscriptionId}")]
-        public async Task<IActionResult> Notification(string subscriptionId, [FromBody] Notification notification) {
+        [HttpPost("{topicId}")]
+        public async Task<IActionResult> Notification(string topicId) { //, [FromBody] Notification notification) {
+            Notification notification;
+            using (StreamReader reader = new StreamReader(Request.Body, Encoding.UTF8))
+            {
+                notification = Model.Notification.FromJson(reader.ReadToEnd());
+            }
+
+            logger.LogDebug($"Received notification for {topicId}: {notification.ToString()}");
+
             //If we do not have an active subscription matching the id then return a notfound error
             var clients = this.clientSubscriptions.GetSubscribedClients(notification);
 
-            await this.webSubClientHubContext.Clients.Clients(clients)
-                .SendAsync("notification", notification);
+            await this.clientHub.ReceivedNotification(clients[0], notification);
 
             return this.Ok();
         }

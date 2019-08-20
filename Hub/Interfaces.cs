@@ -21,6 +21,7 @@ namespace FHIRcastSandbox {
     }
     public interface IContexts
     {
+        string addContext();
         void setContext(string topic, object context);
         object getContext(string topic);
     }

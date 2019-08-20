@@ -6,11 +6,11 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Net.Http;
+using FHIRcastSandbox.Core;
 
-namespace FHIRcastSandbox {
+namespace FHIRcastSandbox
+{
     public class Startup {
         public Startup(IConfiguration configuration) {
             Configuration = configuration;
@@ -24,10 +24,14 @@ namespace FHIRcastSandbox {
             services.AddHangfire(config => config
                 .UseNLogLogProvider()
                 .UseMemoryStorage());
+            services.AddSignalR();
             services.AddTransient<ISubscriptionValidator, SubscriptionValidator>();
-            services.AddSingleton<ISubscriptions, Subscriptions>();
+
+            services.AddSingleton<ISubscriptions, HubSubscriptionCollection>();
             services.AddSingleton<INotifications<HttpResponseMessage>, Notifications<HttpResponseMessage>>();
             services.AddSingleton<IContexts, Contexts>();
+            services.AddSingleton(typeof(InternalHub));
+
             services.AddTransient<IBackgroundJobClient, BackgroundJobClient>();
             services.AddTransient<ValidateSubscriptionJob>();
         }
@@ -41,6 +45,10 @@ namespace FHIRcastSandbox {
             app.UseMvc();
             app.UseHangfireServer();
             app.UseStaticFiles();
+            app.UseSignalR(route =>
+            {
+                route.MapHub<InternalHub>("/internalHub");
+            });
 
             JobActivator.Current = new ServiceProviderJobActivator(app.ApplicationServices);
         }

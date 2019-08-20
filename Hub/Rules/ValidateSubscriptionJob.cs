@@ -2,39 +2,48 @@ using FHIRcastSandbox.Model;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 using System;
+using FHIRcastSandbox.Core;
 
-namespace FHIRcastSandbox.Rules {
-    public class ValidateSubscriptionJob {
+namespace FHIRcastSandbox.Rules
+{
+    public class ValidateSubscriptionJob
+    {
         private readonly ISubscriptionValidator validator;
         private readonly ISubscriptions subscriptions;
         private readonly ILogger<ValidateSubscriptionJob> logger;
+        private readonly InternalHub internalHub;
 
-        public ValidateSubscriptionJob(ISubscriptionValidator validator, ISubscriptions subscriptions, ILogger<ValidateSubscriptionJob> logger) {
+        public ValidateSubscriptionJob(ISubscriptionValidator validator, ISubscriptions subscriptions, ILogger<ValidateSubscriptionJob> logger, InternalHub internalHub)
+        {
             this.validator = validator;
             this.subscriptions = subscriptions;
             this.logger = logger;
+            this.internalHub = internalHub;
         }
 
-        public async Task Run(Subscription subscription, bool simulateCancellation) {
+        public async Task Run(Subscription subscription, bool simulateCancellation)
+        {
             HubValidationOutcome validationOutcome = simulateCancellation ? HubValidationOutcome.Canceled : HubValidationOutcome.Valid;
-            var validationResult = await this.validator.ValidateSubscription(subscription, validationOutcome);
+            var validationResult = await validator.ValidateSubscription(subscription, validationOutcome);
             if (validationResult == ClientValidationOutcome.Verified)
             {
                 if (subscription.Mode == SubscriptionMode.subscribe)
                 {
-                    this.logger.LogInformation($"Adding verified subscription: {subscription}.");
-                    this.subscriptions.AddSubscription(subscription);
+                    // Add subscription to collection and inform client
+                    logger.LogInformation($"Adding verified subscription: {subscription}.");
+                    subscriptions.AddSubscription(subscription);
+                    await internalHub.NotifyClientOfSubscriber(subscription.Topic, subscription);
                 }
                 else if (subscription.Mode == SubscriptionMode.unsubscribe)
                 {
-                    this.logger.LogInformation($"Removing verified subscription: {subscription}.");
-                    this.subscriptions.RemoveSubscription(subscription);
+                    logger.LogInformation($"Removing verified subscription: {subscription}.");
+                    subscriptions.RemoveSubscription(subscription);
                 }
             }
             else
             {
                 var addingOrRemoving = subscription.Mode == SubscriptionMode.subscribe ? "adding" : "removing";
-                this.logger.LogInformation($"Not {addingOrRemoving} unverified subscription: {subscription}.");
+                logger.LogInformation($"Not {addingOrRemoving} unverified subscription: {subscription}.");
             }
         }
     }

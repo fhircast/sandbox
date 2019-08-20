@@ -1,10 +1,13 @@
-﻿using FHIRcastSandbox.WebSubClient.Rules;
+﻿using FHIRcastSandbox.Hubs;
+using FHIRcastSandbox.WebSubClient.Hubs;
+using FHIRcastSandbox.WebSubClient.Rules;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace FHIRcastSandbox.WebSubClient {
+namespace FHIRcastSandbox.WebSubClient
+{
     public class Startup {
         public Startup(IConfiguration configuration) {
             Configuration = configuration;
@@ -17,6 +20,9 @@ namespace FHIRcastSandbox.WebSubClient {
             services.AddMvc();
             services.AddSignalR();
             services.AddSingleton<ClientSubscriptions>();
+            services.AddSingleton(typeof(WebSubClientHub));
+            services.AddSingleton(typeof(InternalHubClient));
+
             services.AddTransient<IHubSubscriptions, HubSubscriptions>();
         }
 
@@ -38,7 +44,7 @@ namespace FHIRcastSandbox.WebSubClient {
             //});
 
             app.UseSignalR(routes => {
-                routes.MapHub<FHIRcastSandbox.Hubs.WebSubClientHub>("/websubclienthub");
+                routes.MapHub<WebSubClientHub>("/websubclienthub");
             });
 
             app.UseMvc();

@@ -1,23 +1,29 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using FHIRcastSandbox.Model;
 using FHIRcastSandbox.Rules;
 using Hangfire;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 
-namespace FHIRcastSandbox.Controllers {
+namespace FHIRcastSandbox.Controllers
+{
     [Route("api/[controller]")]
-    public class HubController : Controller {
+    public class HubController : Controller
+    {
         private readonly ILogger<HubController> logger;
         private readonly IBackgroundJobClient backgroundJobClient;
         private readonly ISubscriptions subscriptions;
         private readonly INotifications<HttpResponseMessage> notifications;
         private readonly IContexts contexts;
 
-        public HubController(ILogger<HubController> logger, IBackgroundJobClient backgroundJobClient, ISubscriptions subscriptions, INotifications<HttpResponseMessage> notifications, IContexts contexts) {
+        public HubController(ILogger<HubController> logger, IBackgroundJobClient backgroundJobClient, ISubscriptions subscriptions, INotifications<HttpResponseMessage> notifications, IContexts contexts)
+        {
             this.backgroundJobClient = backgroundJobClient ?? throw new ArgumentNullException(nameof(backgroundJobClient));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.subscriptions = subscriptions ?? throw new ArgumentNullException(nameof(subscriptions));
@@ -32,11 +38,15 @@ namespace FHIRcastSandbox.Controllers {
         /// <param name="_cancel">if set to <c>true</c> simulate cancelling/denying the subscription by sending this to the callback url.</param>
         /// <returns></returns>
         [HttpPost]
-        public IActionResult Subscribe([FromForm]Subscription hub, bool _cancel = false) {
+        public IActionResult Subscribe([Bind(Prefix = "")][FromForm]Subscription hub, bool _cancel = false)
+        {
             this.logger.LogDebug($"Model valid state is {this.ModelState.IsValid}");
-            foreach (var modelProperty in this.ModelState) {
-                if (modelProperty.Value.Errors.Count > 0) {
-                    for (int i = 0; i < modelProperty.Value.Errors.Count; i++) {
+            foreach (var modelProperty in this.ModelState)
+            {
+                if (modelProperty.Value.Errors.Count > 0)
+                {
+                    for (int i = 0; i < modelProperty.Value.Errors.Count; i++)
+                    {
                         this.logger.LogDebug($"Error found for {modelProperty.Key}: {modelProperty.Value.Errors[i].ErrorMessage}");
                     }
                 }
@@ -44,7 +54,8 @@ namespace FHIRcastSandbox.Controllers {
 
             this.logger.LogDebug($"Subscription for 'received hub subscription': {Environment.NewLine}{hub}");
 
-            if (!this.ModelState.IsValid) {
+            if (!this.ModelState.IsValid)
+            {
                 return this.BadRequest(this.ModelState);
             }
 
@@ -58,7 +69,8 @@ namespace FHIRcastSandbox.Controllers {
         /// </summary>
         /// <returns>All active subscriptions.</returns>
         [HttpGet]
-        public IEnumerable<Subscription> GetSubscriptions() {
+        public IEnumerable<Subscription> GetSubscriptions()
+        {
             return this.subscriptions.GetActiveSubscriptions();
         }
 
@@ -68,8 +80,14 @@ namespace FHIRcastSandbox.Controllers {
         /// <returns></returns>
         [Route("{topicId}")]
         [HttpPost]
-        public async Task<IActionResult> Notify(string topicId, [FromBody] Notification notification)
+        public async Task<IActionResult> Notify(string topicId)
         {
+            Notification notification;
+            using (StreamReader reader = new StreamReader(Request.Body, Encoding.UTF8))
+            {
+                notification = Notification.FromJson(await reader.ReadToEndAsync());
+            }
+
             this.logger.LogInformation($"Got notification from client: {notification}");
 
             var subscriptions = this.subscriptions.GetSubscriptions(notification.Event.Topic, notification.Event.Event);
@@ -95,14 +113,22 @@ namespace FHIRcastSandbox.Controllers {
             return this.Ok();
         }
 
+        /// <summary>
+        /// TODO: Looks like the query for current context functionality. Not sure where this will be after 
+        /// ballot resolution so look into this later.
+        /// </summary>
+        /// <param name="topicId"></param>
+        /// <returns></returns>
         [Route("{topicId}")]
         [HttpGet]
-        public object GetCurrentcontext(string topicId) {
+        public object GetCurrentcontext(string topicId)
+        {
             this.logger.LogInformation($"Got context request from for : {topicId}");
 
             var context = contexts.getContext(topicId);
 
-            if (context != null){
+            if (context != null)
+            {
                 return context;
             }
             else

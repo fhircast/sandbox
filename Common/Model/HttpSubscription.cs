@@ -1,9 +1,10 @@
 using System.Net.Http;
-using FHIRcastSandbox.Model;
+using Common.Model;
 
-namespace FHIRcastSandbox.Model.Http {
+namespace FHIRcastSandbox.Model.Http
+{
     public static class SubscriptionExtensions {
-        public static HttpContent CreateHttpContent(this Subscription source) {
+        public static HttpContent CreateHttpContent(this SubscriptionRequest source) {
 
             string content = $"hub.callback={source.Callback}" +
                 $"&hub.mode={source.Mode}" +

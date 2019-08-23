@@ -1,16 +1,16 @@
+using Common.Model;
 using FHIRcastSandbox.Model;
+using FHIRcastSandbox.WebSubClient.Hubs;
 using FHIRcastSandbox.WebSubClient.Rules;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Logging;
-using System.Security.Cryptography;
-using System.Threading.Tasks;
-using System;
 using Microsoft.Extensions.Configuration;
-using System.Net.Http;
-using System.Text;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
-using Microsoft.AspNetCore.SignalR.Client;
-using FHIRcastSandbox.WebSubClient.Hubs;
+using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace FHIRcastSandbox.Hubs
 {
@@ -18,87 +18,141 @@ namespace FHIRcastSandbox.Hubs
     /// This is a SignalR hub for the js client, not to be confused with a FHIRcast hub.
     /// </summary>
     /// <seealso cref="Microsoft.AspNetCore.SignalR.Hub" />
-    public class WebSubClientHub : Hub<IWebSubClient> {
+    public class WebSubClientHub : Hub<IWebSubClient>
+    {
         private readonly ILogger<WebSubClientHub> logger;
-        private readonly ClientSubscriptions clientSubscriptions;
-        private readonly IHubSubscriptions hubSubscriptions;
+        private readonly Subscriptions _subscriptions;
         private readonly IConfiguration config;
         private readonly IHubContext<WebSubClientHub, IWebSubClient> webSubClientHubContext;
 
         private readonly InternalHubClient internalHubClient;
-     
-        public WebSubClientHub(ILogger<WebSubClientHub> logger, ClientSubscriptions clientSubscriptions, IHubSubscriptions hubSubscriptions, IConfiguration config, IHubContext<WebSubClientHub, IWebSubClient> hubContext, InternalHubClient internalHubClient) {
+
+        public WebSubClientHub(ILogger<WebSubClientHub> logger, IConfiguration config, IHubContext<WebSubClientHub, IWebSubClient> hubContext, InternalHubClient internalHubClient, Subscriptions subscriptions)
+        {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            this.clientSubscriptions = clientSubscriptions ?? throw new ArgumentNullException(nameof(clientSubscriptions));
-            this.hubSubscriptions = hubSubscriptions ?? throw new ArgumentNullException(nameof(hubSubscriptions));
             this.config = config;
             webSubClientHubContext = hubContext;
             this.internalHubClient = internalHubClient;
 
+            this.internalHubClient.SubscriberRemoved += InternalHubClient_SubscriberRemoved;
             this.internalHubClient.SubscriberAdded += InternalHubClient_SubscriberAdded;
+            _subscriptions = subscriptions;
         }
 
-        private void InternalHubClient_SubscriberAdded(object sender, Subscription subscription)
+        private async void InternalHubClient_SubscriberAdded(object sender, SubscriptionRequest subscription)
         {
-            AddSubscriber(Context.ConnectionId, subscription);
+            await AddSubscriber(Context.ConnectionId, subscription);
         }
 
-        public async Task Subscribe(string subscriptionUrl, string topic, string events, string[] httpHeaders) {
-            if (string.IsNullOrEmpty(subscriptionUrl)) {
-                var hubBaseURL = this.config.GetValue("Settings:HubBaseURL", "localhost");
-                var hubPort = this.config.GetValue("Settings:HubPort", 5000);
+        private async void InternalHubClient_SubscriberRemoved(object sender, SubscriptionRequest subscription)
+        {
+            await RemoveSubscriber(Context.ConnectionId, subscription);
+        }
+
+        /// <summary>
+        /// Client is attempting to subscribe to another app
+        /// </summary>
+        /// <param name="subscriptionUrl"></param>
+        /// <param name="topic"></param>
+        /// <param name="events"></param>
+        /// <param name="httpHeaders"></param>
+        /// <returns></returns>
+        public async Task Subscribe(string subscriptionUrl, string topic, string events, string[] httpHeaders)
+        {
+            if (string.IsNullOrEmpty(subscriptionUrl))
+            {
+                var hubBaseURL = config.GetValue("Settings:HubBaseURL", "localhost");
+                var hubPort = config.GetValue("Settings:HubPort", 5000);
                 subscriptionUrl = new UriBuilder("http", hubBaseURL, hubPort, "/api/hub").Uri.ToString();
             }
 
-            var connectionId = this.Context.ConnectionId;
+            string clientId = Context.ConnectionId;
 
             var rngCsp = new RNGCryptoServiceProvider();
             var buffer = new byte[64];
             rngCsp.GetBytes(buffer);
             var secret = Convert.ToBase64String(buffer);
-            var clientBaseURL = this.config.GetValue("Settings:ClientBaseURL", "localhost");
-            var clientPort = this.config.GetValue("Settings:ClientPort", 5001);
+            var clientBaseURL = config.GetValue("Settings:ClientBaseURL", "localhost");
+            var clientPort = config.GetValue("Settings:ClientPort", 5001);
 
             var callbackUri = new UriBuilder(
                 "http",
                 clientBaseURL,
                 clientPort,
-                $"/callback/{connectionId}");
+                $"/callback/{clientId}");
 
-            var subscription = new Subscription()
+            SubscriptionRequest subscription = new SubscriptionRequest()
             {
                 Callback = callbackUri.Uri.OriginalString,
-                Events = events.Split(",", StringSplitOptions.RemoveEmptyEntries),
                 Mode = SubscriptionMode.subscribe,
-                Secret = secret,
-                Lease_Seconds = 3600,
                 Topic = topic,
-                HubURL = new HubURL() { URL = subscriptionUrl, HTTPHeaders = httpHeaders }
+                Secret = secret,
+                Events = events.Split(",", StringSplitOptions.RemoveEmptyEntries),
+                Lease_Seconds = 3600,
+                HubDetails = new HubDetails()
+                {
+                    HubUrl = subscriptionUrl,
+                    HttpHeaders = httpHeaders
+                }
             };
 
-            // First adding to pending and then sending the subscription to
-            // prevent a race.
-            this.clientSubscriptions.AddPendingSubscription(connectionId, subscription);
-            try {
-                await this.hubSubscriptions.SubscribeAsync(subscription);
-            }
-            catch {
-                this.clientSubscriptions.RemoveSubscription(connectionId);
-                throw;
+            if (!await PendAndPostSubscription(clientId, subscription))
+            {
+                // I don't know do something
             }
         }
 
-        public async Task Unsubscribe(string topic) {
-            var clientConnectionId = this.Context.ConnectionId;
-            this.logger.LogDebug($"Unsubscribing subscription {clientConnectionId}");
-            Subscription sub = this.clientSubscriptions.GetSubscription(clientConnectionId, topic);
-            sub.Mode = SubscriptionMode.unsubscribe;
+        public async Task Unsubscribe(string topic)
+        {
+            string clientId = Context.ConnectionId;
 
-            this.clientSubscriptions.PendingRemovalSubscription(clientConnectionId, topic);
-            await this.hubSubscriptions.Unsubscribe(sub);
+            SubscriptionRequest subscription;
+            if (!_subscriptions.GetClientSubscription(clientId, topic, out subscription))
+            {
+                return;
+            }
 
-            //Remove subscription
-            //TODO: implement this using RemoveSubscription
+            logger.LogDebug($"Unsubscribing subscription for {clientId}: {subscription}");
+
+            subscription.Mode = SubscriptionMode.unsubscribe;
+
+            if (!await PendAndPostSubscription(clientId, subscription))
+            {
+                // I don't know do something
+                return;
+            }
+        }
+
+        /// <summary>
+        /// Posts the subscription request to its associated Hub. This is used for both new subscriptions
+        /// as well as unsubscribing
+        /// </summary>
+        /// <param name="subscriptionRequest"></param>
+        /// <returns>True if the Hub returned a success code, otherwise false</returns>
+        private async Task<bool> PendAndPostSubscription(string clientId, SubscriptionRequest subscriptionRequest)
+        {
+            _subscriptions.AddPendingSubscription(clientId, subscriptionRequest);
+
+            HttpClient client = new HttpClient();
+
+            foreach (string header in subscriptionRequest.HubDetails.HttpHeaders)
+            {
+                string[] split = header.Split(":");
+                client.DefaultRequestHeaders.Add(split[0], split[1]);
+            }
+
+            HttpResponseMessage response = await client.PostAsync(subscriptionRequest.HubDetails.HubUrl, subscriptionRequest.BuildPostHttpContent());
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _subscriptions.RemovePendingSubscription(clientId, subscriptionRequest);
+            }
+            //else
+            //{
+            //    await SubscriptionsChanged(clientId);
+            //}
+
+            return response.IsSuccessStatusCode;
         }
 
         /// <summary>
@@ -151,16 +205,16 @@ namespace FHIRcastSandbox.Hubs
             string subscriptionUrl = new UriBuilder("http", hubBaseURL, hubPort, "/api/hub").Uri.ToString();
 
             // Send notification and await response
-            this.logger.LogDebug($"Sending notification to {subscriptionUrl}/{topic}: {notification.ToString()}");
+            logger.LogDebug($"Sending notification to {subscriptionUrl}/{topic}: {notification.ToString()}");
             var response = await httpClient.PostAsync($"{subscriptionUrl}/{topic}", new StringContent(notification.ToJson(), Encoding.UTF8, "application/json"));
             response.EnsureSuccessStatusCode();
         }
 
         public string GetTopic()
         {
-            this.logger.LogDebug($"Sending topic {this.Context.ConnectionId} up to client");
+            logger.LogDebug($"Sending topic {this.Context.ConnectionId} up to client");
             internalHubClient.RegisterTopic(Context.ConnectionId);
-            return this.Context.ConnectionId;
+            return Context.ConnectionId;
         }
 
         #region Calls To Client
@@ -170,16 +224,23 @@ namespace FHIRcastSandbox.Hubs
             await webSubClientHubContext.Clients.Client(connectionId).ReceivedNotification(notification);
         }
 
-        public async Task AddSubscription(string connectionId, SubscriptionWithHubURL subscription)
-        {
-            logger.LogDebug($"Adding subscription for {connectionId}: {subscription.ToString()}");
-            await webSubClientHubContext.Clients.Client(connectionId).AddSubscription(subscription);
-        }
-
-        public async Task AddSubscriber(string connectionId, Subscription subscription)
+        public async Task AddSubscriber(string connectionId, SubscriptionRequest subscription)
         {
             logger.LogDebug($"Adding subscriber for {connectionId}: {subscription.ToString()}");
-            await webSubClientHubContext.Clients.Client(connectionId).AddSubscriber(subscription);
+            await webSubClientHubContext.Clients.Client(connectionId).SubscriberAdded(subscription);
+        }
+
+        public async Task RemoveSubscriber(string connectionId, SubscriptionRequest subscription)
+        {
+            logger.LogDebug($"Removing subscriber for {connectionId}: {subscription.ToString()}");
+            await webSubClientHubContext.Clients.Client(connectionId).SubscriberRemoved(subscription);
+        }
+
+        public async Task SubscriptionsChanged(string clientId)
+        {
+            List<SubscriptionRequest> subscriptions = _subscriptions.ClientsSubscriptions(clientId);
+            logger.LogDebug($"Subscriptions changed for {clientId}. New list: {subscriptions}");
+            await webSubClientHubContext.Clients.Client(clientId).SubscriptionsChanged(_subscriptions.ClientsSubscriptions(clientId));
         }
 
         public async Task AlertMessage(string connectionId, string message)

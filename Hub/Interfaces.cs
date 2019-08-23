@@ -1,23 +1,24 @@
+using Common.Model;
 using FHIRcastSandbox.Model;
 using FHIRcastSandbox.Rules;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Threading.Tasks;
 
-namespace FHIRcastSandbox {
+namespace FHIRcastSandbox
+{
     public interface ISubscriptionValidator {
-        Task<ClientValidationOutcome> ValidateSubscription(Subscription subscription, HubValidationOutcome outcome);
+        Task<ClientValidationOutcome> ValidateSubscription(SubscriptionRequest subscription, HubValidationOutcome outcome);
     }
 
     public interface ISubscriptions {
-        ICollection<Subscription> GetActiveSubscriptions();
-        void AddSubscription(Subscription subscription);
-        void RemoveSubscription(Subscription subscription);
-        ICollection<Subscription> GetSubscriptions(string topic, string notificationEvent);
+        ICollection<SubscriptionRequest> GetActiveSubscriptions();
+        void AddSubscription(SubscriptionRequest subscription);
+        void RemoveSubscription(SubscriptionRequest subscription);
+        ICollection<SubscriptionRequest> GetSubscriptions(string topic, string notificationEvent);
     }
 
     public interface INotifications<T> {
-        Task<T> SendNotification(Notification notification, Subscription subscription);
+        Task<T> SendNotification(Notification notification, SubscriptionRequest subscription);
     }
     public interface IContexts
     {

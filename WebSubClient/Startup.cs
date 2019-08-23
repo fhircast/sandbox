@@ -19,11 +19,9 @@ namespace FHIRcastSandbox.WebSubClient
         public void ConfigureServices(IServiceCollection services) {
             services.AddMvc();
             services.AddSignalR();
-            services.AddSingleton<ClientSubscriptions>();
+            services.AddSingleton<Subscriptions>();
             services.AddSingleton(typeof(WebSubClientHub));
             services.AddSingleton(typeof(InternalHubClient));
-
-            services.AddTransient<IHubSubscriptions, HubSubscriptions>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -1,24 +1,28 @@
+using Common.Model;
+using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Security.Cryptography;
-using FHIRcastSandbox.Model;
-using Microsoft.Extensions.Logging;
 
-namespace FHIRcastSandbox.Rules {
-    public class HubSubscriptionCollection : ISubscriptions {
+namespace FHIRcastSandbox.Rules
+{
+    public class HubSubscriptionCollection : ISubscriptions
+    {
         private readonly ILogger<HubSubscriptionCollection> logger;
-        private ImmutableHashSet<Subscription> subscriptions = ImmutableHashSet<Subscription>.Empty.WithComparer(Subscription.DefaultComparer);
+        private ImmutableHashSet<SubscriptionRequest> subscriptions = ImmutableHashSet<SubscriptionRequest>.Empty;
 
-        public HubSubscriptionCollection(ILogger<HubSubscriptionCollection> logger) {
+        public HubSubscriptionCollection(ILogger<HubSubscriptionCollection> logger)
+        {
             this.logger = logger;
         }
 
-        public ICollection<Subscription> GetActiveSubscriptions() {
+        public ICollection<SubscriptionRequest> GetActiveSubscriptions()
+        {
             return this.subscriptions;
         }
 
-        public ICollection<Subscription> GetSubscriptions(string topic, string notificationEvent) {
+        public ICollection<SubscriptionRequest> GetSubscriptions(string topic, string notificationEvent)
+        {
             this.logger.LogDebug($"Finding subscriptions for topic: {topic} and event: {notificationEvent}");
             return this.subscriptions
                 .Where(x => x.Topic == topic)
@@ -26,17 +30,19 @@ namespace FHIRcastSandbox.Rules {
                 .ToArray();
         }
 
-        public Subscription GetSubscription(string topic)
+        public SubscriptionRequest GetSubscription(string topic)
         {
             return this.subscriptions.Where(x => x.Topic == topic).First();
         }
 
-        public void AddSubscription(Subscription subscription) {
+        public void AddSubscription(SubscriptionRequest subscription)
+        {
             this.logger.LogInformation($"Adding subscription {subscription}.");
             this.subscriptions = this.subscriptions.Add(subscription);
         }
 
-        public void RemoveSubscription(Subscription subscription) {
+        public void RemoveSubscription(SubscriptionRequest subscription)
+        {
             this.logger.LogInformation($"Removing subscription {subscription}.");
             this.subscriptions = this.subscriptions.Remove(subscription);
         }

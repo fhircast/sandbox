@@ -1,8 +1,7 @@
-using FHIRcastSandbox.Model;
+using Common.Model;
+using FHIRcastSandbox.Core;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
-using System;
-using FHIRcastSandbox.Core;
 
 namespace FHIRcastSandbox.Rules
 {
@@ -21,10 +20,11 @@ namespace FHIRcastSandbox.Rules
             this.internalHub = internalHub;
         }
 
-        public async Task Run(Subscription subscription, bool simulateCancellation)
+        public async Task Run(SubscriptionRequest subscription, bool simulateCancellation)
         {
             HubValidationOutcome validationOutcome = simulateCancellation ? HubValidationOutcome.Canceled : HubValidationOutcome.Valid;
             var validationResult = await validator.ValidateSubscription(subscription, validationOutcome);
+
             if (validationResult == ClientValidationOutcome.Verified)
             {
                 if (subscription.Mode == SubscriptionMode.subscribe)

@@ -1,4 +1,4 @@
-﻿using FHIRcastSandbox.Model;
+﻿using Common.Model;
 using System.Threading.Tasks;
 
 namespace FHIRcastSandbox.Core
@@ -10,7 +10,7 @@ namespace FHIRcastSandbox.Core
     /// </summary>
     public interface IInternalHubClient
     {
-        Task AddSubscriber(Subscription subscription);
-        Task RemoveSubscriber(Subscription subscription);
+        Task AddSubscriber(SubscriptionRequest subscription);
+        Task RemoveSubscriber(SubscriptionRequest subscription);
     }
 }

@@ -1,4 +1,4 @@
-﻿using FHIRcastSandbox.Model;
+﻿using Common.Model;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -17,17 +17,19 @@ namespace FHIRcastSandbox.WebSubClient.Hubs
         #region Member Variables
         private readonly ILogger<InternalHubClient> logger;
         private readonly IConfiguration config;
-        private HubConnection hubConnection; 
+        private HubConnection hubConnection;
         #endregion
 
         #region Events
-        public delegate void SubscriberAddedEventHandler(object sender, Subscription subscription);
+        public delegate void SubscriberAddedEventHandler(object sender, SubscriptionRequest subscription);
+        public delegate void SubscriberRemovedEventHandler(object sender, SubscriptionRequest subscription);
 
         /// <summary>
         /// Event used to inform the WebSubClientHub of a new subscriber since it has the connection to the js client.
         /// Couldn't get a direct reference to WebSubClientHub because it created a circular dependency.
         /// </summary>
         public event SubscriberAddedEventHandler SubscriberAdded;
+        public event SubscriberRemovedEventHandler SubscriberRemoved;
         public event EventHandler<string> Error;
 
         private void RaiseError(string errorMessage)
@@ -37,14 +39,22 @@ namespace FHIRcastSandbox.WebSubClient.Hubs
             handler?.Invoke(this, errorMessage);
         }
 
-        private void RaiseAddSubscriber(Subscription subscription)
+        private void RaiseAddSubscriber(SubscriptionRequest subscription)
         {
-            logger.LogDebug($"Received subscriber notification from internal hub: {subscription.ToString()}");
+            logger.LogDebug($"Subscriber added notification from internal hub: {subscription.ToString()}");
             SubscriberAddedEventHandler handler = SubscriberAdded;
+            handler?.Invoke(this, subscription);
+        }
+
+        private void RaiseRemoveSubscriber(SubscriptionRequest subscription)
+        {
+            logger.LogDebug($"Subscriber removed notification from internal hub: {subscription.ToString()}");
+            SubscriberRemovedEventHandler handler = SubscriberRemoved;
             handler?.Invoke(this, subscription);
         }
         #endregion
 
+        #region Initialization
         public InternalHubClient(ILogger<InternalHubClient> logger, IConfiguration config)
         {
             this.logger = logger;
@@ -74,7 +84,8 @@ namespace FHIRcastSandbox.WebSubClient.Hubs
             };
 
             // Add method handlers
-            hubConnection.On<Subscription>("AddSubscriber", AddSubscriber);
+            hubConnection.On<SubscriptionRequest>("AddSubscriber", AddSubscriber);
+            hubConnection.On<SubscriptionRequest>("RemoveSubscriber", RemoveSubscriber);
             //hubConnection.On<Subscription>("RemoveSubscriber", RemoveSubscriber); //TODO: Implement this interaction
 
             try
@@ -88,8 +99,8 @@ namespace FHIRcastSandbox.WebSubClient.Hubs
                 logger.LogError(errorMessage);
                 RaiseError(errorMessage);
             }
-        }
-        
+        } 
+        #endregion
 
         #region Calls from WebSubHub
         public async void RegisterTopic(string topic)
@@ -100,10 +111,14 @@ namespace FHIRcastSandbox.WebSubClient.Hubs
         #endregion
 
         #region Calls from Internal Hub
-        private void AddSubscriber(Subscription subscription)
+        private void AddSubscriber(SubscriptionRequest subscription)
         {
             RaiseAddSubscriber(subscription);
-        }  
+        }
+        private void RemoveSubscriber(SubscriptionRequest subscription)
+        {
+            RaiseRemoveSubscriber(subscription);
+        }
         #endregion
 
         #region Calls to Internal Hub

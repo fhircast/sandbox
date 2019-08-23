@@ -1,22 +1,26 @@
+using Common.Model;
 using FHIRcastSandbox.Model;
 using Microsoft.Extensions.Logging;
-using System.Net.Http.Headers;
-using System.Net.Http;
-using System.Threading.Tasks;
 using System;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
-using Newtonsoft.Json;
+using System.Threading.Tasks;
 
-namespace FHIRcastSandbox.Rules {
-    public class Notifications<T> : INotifications<HttpResponseMessage> {
+namespace FHIRcastSandbox.Rules
+{
+    public class Notifications<T> : INotifications<HttpResponseMessage>
+    {
         private ILogger<Notifications<HttpResponseMessage>> logger;
 
-        public Notifications(ILogger<Notifications<HttpResponseMessage>> logger) {
+        public Notifications(ILogger<Notifications<HttpResponseMessage>> logger)
+        {
             this.logger = logger;
         }
 
-        public async Task<HttpResponseMessage> SendNotification(Notification notification, Subscription subscription) {
+        public async Task<HttpResponseMessage> SendNotification(Notification notification, SubscriptionRequest subscription)
+        {
             // Create the JSON body
             string body = notification.ToJson();
             HttpContent httpContent = new StringContent(body);
@@ -43,7 +47,7 @@ namespace FHIRcastSandbox.Rules {
         /// <param name="subscription">Subscription to get the secret from</param>
         /// <param name="body">Body used to calculate the signature</param>
         /// <returns>The sha256 hash of the body using the subscription's secret</returns>
-        private string XHubSignature(Subscription subscription, string body)
+        private string XHubSignature(SubscriptionRequest subscription, string body)
         {
             using (HMACSHA256 sha256 = new HMACSHA256(Encoding.ASCII.GetBytes(subscription.Secret)))
             {

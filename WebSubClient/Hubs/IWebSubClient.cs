@@ -1,4 +1,6 @@
-﻿using FHIRcastSandbox.Model;
+﻿using Common.Model;
+using FHIRcastSandbox.Model;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace FHIRcastSandbox.Hubs
@@ -10,8 +12,9 @@ namespace FHIRcastSandbox.Hubs
     {
         Task ReceivedNotification(Notification notification);
 
-        Task AddSubscription(SubscriptionWithHubURL subscription);
-        Task AddSubscriber(Subscription subscription);
+        Task SubscriptionsChanged(List<SubscriptionRequest> subscriptions);
+        Task SubscriberAdded(SubscriptionRequest subscriber);
+        Task SubscriberRemoved(SubscriptionRequest subscriber);
 
         Task AlertMessage(string message);
     }

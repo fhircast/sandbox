@@ -46,20 +46,20 @@ connection.start()
 //#region SignalR Connection Functions
 // Handles receiving a notification from one of our subscriptions
 connection.on("ReceivedNotification", (notification) => {
-    popupNotification("Received " + notification.event.event + " notification");
+    popupNotification("Received " + notification.event["hub.event"] + " notification");
 
     let eventObj = parseNotificationIntoEventObj(notification);
     var ctrl, value;
 
-    if (eventObj.resourceType == eventResources.PATIENT) {
+    if (eventObj.resourceType === eventResources.PATIENT) {
         ctrl = this["patientID"];        
-    } else if (eventObj.resourceType == eventResources.IMAGINGSTUDY) {
+    } else if (eventObj.resourceType === eventResources.IMAGINGSTUDY) {
         ctrl = this["accessionNumber"];
     }
 
-    if (eventObj.actionType == eventActions.OPEN) {
-        value = notification.event.context[0].resource.id;  // Just assume the first resource for now.
-    } else if (eventObj.actionType == eventActions.CLOSE) {
+    if (eventObj.actionType === eventActions.OPEN) {
+        value = notification.event.context[0].idElement.value;  // Just assume the first resource for now.
+    } else if (eventObj.actionType === eventActions.CLOSE) {
         value = "";
     }
 
@@ -67,7 +67,7 @@ connection.on("ReceivedNotification", (notification) => {
 });
 
 function parseNotificationIntoEventObj(notification) {
-    var eventString = notification.event.event;
+    var eventString = notification.event["hub.event"];
 
     // This parsing will change with the upcoming spec changes
     var pieces = eventString.split("-");
@@ -76,16 +76,17 @@ function parseNotificationIntoEventObj(notification) {
     return event;
 }
 
-// Handles adding a verified subscription we created
-connection.on("AddSubscription", (subscription) => {
-    popupNotification("Verified subscription to " + subscription.topic);
-
+connection.on("SubscriptionsChanged", (subscriptions) => {
     var subTable = getSubscriptionTable(false).getElementsByTagName('tbody')[0];
-    addSubscriptionToTable(subTable, subscription);
+    subTable.innerHTML = "";
+
+    for (var i = 0; i < subscriptions.length; i++) {
+        addSubscriptionToTable(subTable, subscriptions[i]);
+    }
 });
 
 // Handles adding a verified subscription to this client
-connection.on("AddSubscriber", (subscription) => {
+connection.on("SubscriberAdded", (subscription) => {
     popupNotification("New subscriber " + subscription.callback);
 
     var subTable = getSubscriptionTable(true).getElementsByTagName('tbody')[0];
@@ -116,7 +117,15 @@ function addSubscriptionToTable(table, subscription) {
     var eventCell = newRow.insertCell(2);
     var unsubscribeCell = newRow.insertCell(3);
 
-    var urlText = document.createTextNode(subscription.hubURL ? subscription.hubURL.url : subscription.callback);   
+
+    var url = "";
+    if (subscription.hubDetails && subscription.hubDetails.hubUrl) {
+        url = subscription.hubDetails.hubUrl;
+    } else {
+        url = subscription.callback;
+    }
+
+    var urlText = document.createTextNode(url);
     var topicText = document.createTextNode(subscription.topic);
     var eventsText = document.createTextNode(subscription.events.join(","));
     var unsubscribeBtn = document.createElement('input');
@@ -172,12 +181,12 @@ $("#subscribe").submit(function (e) {
 
     let eventChkBoxes = ["chkOpenPatient", "chkClosePatient", "chkOpenStudy", "chkCloseStudy"];
     let events = "";
-    for (var i = 0; i < eventChkBoxes.length; i++) {
-        if (this[eventChkBoxes[i]].checked) {
+    for (var j = 0; j < eventChkBoxes.length; j++) {
+        if (this[eventChkBoxes[j]].checked) {
             if (events === "") {
-                events = this[eventChkBoxes[i]].value;
+                events = this[eventChkBoxes[j]].value;
             } else {
-                events += "," + this[eventChkBoxes[i]].value;
+                events += "," + this[eventChkBoxes[j]].value;
             }
         }
     }
@@ -259,7 +268,7 @@ function clearNotification() {
 }
 
 function alertDivExists() {
-    return (document.getElementById("alertMessageDiv") != null);
+    return (document.getElementById("alertMessageDiv") !== null);
 }
 
 function addAlertDiv() {

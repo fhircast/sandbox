@@ -1,15 +1,15 @@
+using Common.Model;
+using FHIRcastSandbox.Model;
+using FHIRcastSandbox.Rules;
+using Hangfire;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using FHIRcastSandbox.Model;
-using FHIRcastSandbox.Rules;
-using Hangfire;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Logging;
 
 namespace FHIRcastSandbox.Controllers
 {
@@ -38,30 +38,30 @@ namespace FHIRcastSandbox.Controllers
         /// <param name="_cancel">if set to <c>true</c> simulate cancelling/denying the subscription by sending this to the callback url.</param>
         /// <returns></returns>
         [HttpPost]
-        public IActionResult Subscribe([Bind(Prefix = "")][FromForm]Subscription hub, bool _cancel = false)
+        public IActionResult Subscribe([FromForm]SubscriptionRequest hub, bool _cancel = false)
         {
-            this.logger.LogDebug($"Model valid state is {this.ModelState.IsValid}");
+            logger.LogDebug($"Model valid state is {this.ModelState.IsValid}");
             foreach (var modelProperty in this.ModelState)
             {
                 if (modelProperty.Value.Errors.Count > 0)
                 {
                     for (int i = 0; i < modelProperty.Value.Errors.Count; i++)
                     {
-                        this.logger.LogDebug($"Error found for {modelProperty.Key}: {modelProperty.Value.Errors[i].ErrorMessage}");
+                        logger.LogDebug($"Error found for {modelProperty.Key}: {modelProperty.Value.Errors[i].ErrorMessage}");
                     }
                 }
             }
 
-            this.logger.LogDebug($"Subscription for 'received hub subscription': {Environment.NewLine}{hub}");
+            logger.LogDebug($"Subscription for 'received hub subscription': {Environment.NewLine}{hub}");
 
-            if (!this.ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                return this.BadRequest(this.ModelState);
+                return BadRequest(ModelState);
             }
 
-            this.backgroundJobClient.Enqueue<ValidateSubscriptionJob>(job => job.Run(hub, _cancel));
+            backgroundJobClient.Enqueue<ValidateSubscriptionJob>(job => job.Run(hub, _cancel));
 
-            return this.Accepted();
+            return Accepted();
         }
 
         /// <summary>
@@ -69,9 +69,9 @@ namespace FHIRcastSandbox.Controllers
         /// </summary>
         /// <returns>All active subscriptions.</returns>
         [HttpGet]
-        public IEnumerable<Subscription> GetSubscriptions()
+        public IEnumerable<SubscriptionRequest> GetSubscriptions()
         {
-            return this.subscriptions.GetActiveSubscriptions();
+            return subscriptions.GetActiveSubscriptions();
         }
 
         /// <summary>
@@ -88,14 +88,14 @@ namespace FHIRcastSandbox.Controllers
                 notification = Notification.FromJson(await reader.ReadToEndAsync());
             }
 
-            this.logger.LogInformation($"Got notification from client: {notification}");
+            logger.LogInformation($"Got notification from client: {notification}");
 
             var subscriptions = this.subscriptions.GetSubscriptions(notification.Event.Topic, notification.Event.Event);
-            this.logger.LogDebug($"Found {subscriptions.Count} subscriptions matching client event");
+            logger.LogDebug($"Found {subscriptions.Count} subscriptions matching client event");
 
             if (subscriptions.Count == 0)
             {
-                return this.NotFound($"Could not find any subscriptions for sessionId {topicId}.");
+                return NotFound($"Could not find any subscriptions for sessionId {topicId}.");
             }
 
             contexts.setContext(topicId, notification.Event.Context);
@@ -103,14 +103,14 @@ namespace FHIRcastSandbox.Controllers
             var success = true;
             foreach (var sub in subscriptions)
             {
-                success |= (await this.notifications.SendNotification(notification, sub)).IsSuccessStatusCode;
+                success |= (await notifications.SendNotification(notification, sub)).IsSuccessStatusCode;
             }
             if (!success)
             {
                 // TODO: return reason for failure
-                this.Forbid();
+                Forbid();
             }
-            return this.Ok();
+            return Ok();
         }
 
         /// <summary>
@@ -123,7 +123,7 @@ namespace FHIRcastSandbox.Controllers
         [HttpGet]
         public object GetCurrentcontext(string topicId)
         {
-            this.logger.LogInformation($"Got context request from for : {topicId}");
+            logger.LogInformation($"Got context request from for : {topicId}");
 
             var context = contexts.getContext(topicId);
 
@@ -133,7 +133,7 @@ namespace FHIRcastSandbox.Controllers
             }
             else
             {
-                return this.NotFound();
+                return NotFound();
             }
 
         }

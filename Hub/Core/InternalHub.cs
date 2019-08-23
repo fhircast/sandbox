@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using FHIRcastSandbox.Model;
+﻿using Common.Model;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace FHIRcastSandbox.Core
 {
@@ -11,6 +11,7 @@ namespace FHIRcastSandbox.Core
     /// new subscriptions to those clients (which come in through the Hub) and notifications of client
     /// updates that affect those subscriptions.
     /// 
+    /// TODO: Add notification for unsubscriber
     /// TODO: Move notifications from client to go through here instead of using the post mechanism
     /// TODO: Unit tests for the SignalR connection. No updated unit test documentation for
     ///       SignalR in ASP.NET Core that I could find
@@ -56,7 +57,7 @@ namespace FHIRcastSandbox.Core
         /// <param name="topic">Topic being subscribed to</param>
         /// <param name="subscription">Subscription object</param>
         /// <returns></returns>
-        public Task NotifyClientOfSubscriber(string topic, Subscription subscription)
+        public Task NotifyClientOfSubscriber(string topic, SubscriptionRequest subscription)
         {
             if (!topicConnectionIdMapping.ContainsKey(topic))
             {
@@ -66,7 +67,7 @@ namespace FHIRcastSandbox.Core
 
             logger.LogDebug($"Notifying {topic} of new subscriber {subscription.ToString()}");
             return Clients.Client(topicConnectionIdMapping[topic]).AddSubscriber(subscription);
-        } 
+        }
         #endregion
     }
 }

@@ -5,7 +5,9 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
+using Common.Model;
 using FHIRcastSandbox.Model;
 using FHIRcastSandbox.Model.Http;
 using Microsoft.AspNetCore.Hosting;
@@ -71,7 +73,7 @@ namespace FHIRcastSandbox
             return port;
         }
 
-        private void VerifiySubscription(Subscription sentSubscription, Subscription returnedSubscription)
+        private void VerifiySubscription(SubscriptionRequest sentSubscription, SubscriptionRequest returnedSubscription)
         {
             Assert.Equal(sentSubscription.Secret, returnedSubscription.Secret);
             Assert.Equal(sentSubscription.Mode, returnedSubscription.Mode);
@@ -97,7 +99,7 @@ namespace FHIRcastSandbox
             var events = new[] { "some_event", "another_event" };
             var callback = $"http://localhost:{this.webSubClientServerPort}/callback/{connectionId}";
             int leaseSeconds = 2400;
-            var subscription = Subscription.CreateNewSubscription(subscriptionUrl, topic, events, callback, leaseSeconds);
+            var subscription = CreateNewSubscription(subscriptionUrl, topic, events, callback, leaseSeconds);
             var httpContent = subscription.CreateHttpContent();
 
             var clientTestResponse = await new HttpClient().GetAsync(callback);
@@ -109,13 +111,13 @@ namespace FHIRcastSandbox
 
             // Act
             var result = await new HttpClient().GetStringAsync(subscriptionUrl);
-            var subscriptions = JsonConvert.DeserializeObject<Subscription[]>(result);
+            var subscriptions = JsonConvert.DeserializeObject<SubscriptionRequest[]>(result);
 
             // Assert
             Assert.Single(subscriptions);
 
             // Check that all the passed values in subscription are as expected
-            Subscription returnedSubstription = subscriptions[0];
+            SubscriptionRequest returnedSubstription = subscriptions[0];
             VerifiySubscription(subscription, returnedSubstription);
         }
 
@@ -130,7 +132,7 @@ namespace FHIRcastSandbox
             var events = new[] { "some_event_1" };
             var callback = $"http://localhost:{this.webSubClientServerPort}/callback/{connectionId}";
             int leaseSeconds = 1201;
-            var subscription1 = Subscription.CreateNewSubscription(subscriptionUrl, topic, events, callback, leaseSeconds);
+            var subscription1 = CreateNewSubscription(subscriptionUrl, topic, events, callback, leaseSeconds);
             var httpContent = subscription1.CreateHttpContent();
 
             var clientTestResponse = await new HttpClient().GetAsync(callback);
@@ -142,12 +144,12 @@ namespace FHIRcastSandbox
 
             // Act
             var result = await new HttpClient().GetStringAsync(subscriptionUrl);
-            var subscriptions = JsonConvert.DeserializeObject<Subscription[]>(result);
+            var subscriptions = JsonConvert.DeserializeObject<SubscriptionRequest[]>(result);
 
             // Assert
             Assert.Single(subscriptions);
             // Check that all the passed values in subscription are as expected
-            Subscription returnedSubstription = subscriptions[0];
+            SubscriptionRequest returnedSubstription = subscriptions[0];
             VerifiySubscription(subscription1, returnedSubstription);
 
             // Arrange
@@ -158,7 +160,7 @@ namespace FHIRcastSandbox
             events = new[] { "some_event" };
             callback = $"http://localhost:{this.webSubClientServerPort}/callback/{connectionId}";
             leaseSeconds = 1202;
-            var subscription2 = Subscription.CreateNewSubscription(subscriptionUrl, topic, events, callback, leaseSeconds);
+            var subscription2 = CreateNewSubscription(subscriptionUrl, topic, events, callback, leaseSeconds);
             httpContent = subscription2.CreateHttpContent();
 
             clientTestResponse = await new HttpClient().GetAsync(callback);
@@ -170,7 +172,7 @@ namespace FHIRcastSandbox
 
             // Act
             result = await new HttpClient().GetStringAsync(subscriptionUrl);
-            subscriptions = JsonConvert.DeserializeObject<Subscription[]>(result);
+            subscriptions = JsonConvert.DeserializeObject<SubscriptionRequest[]>(result);
 
             // Assert
             Assert.Equal(2, subscriptions.Length);
@@ -182,9 +184,9 @@ namespace FHIRcastSandbox
             returnedSubstription = subscriptions.FirstOrDefault(a => a.Topic.Equals(subscription2.Topic));
             VerifiySubscription(subscription2, returnedSubstription);
 
-            var unSubscription = Subscription.CreateNewSubscription(subscriptionUrl, topic, events, callback, leaseSeconds);
-            unSubscription.Mode = SubscriptionMode.unsubscribe;
-            httpContent = unSubscription.CreateHttpContent();
+            //var unSubscription = CreateNewSubscription(subscriptionUrl, topic, events, callback, leaseSeconds);
+            subscription2.Mode = Common.Model.SubscriptionMode.unsubscribe;
+            httpContent = subscription2.CreateHttpContent();
 
             clientTestResponse = await new HttpClient().GetAsync(callback);
             Assert.True(clientTestResponse.IsSuccessStatusCode, $"Could not connect to web sub client: {clientTestResponse}");
@@ -195,7 +197,7 @@ namespace FHIRcastSandbox
 
             // Act
             result = await new HttpClient().GetStringAsync(subscriptionUrl);
-            subscriptions = JsonConvert.DeserializeObject<Subscription[]>(result);
+            subscriptions = JsonConvert.DeserializeObject<SubscriptionRequest[]>(result);
 
             // Assert
             Assert.Single(subscriptions);
@@ -210,6 +212,26 @@ namespace FHIRcastSandbox
                 this.webSubClientServer.StopAsync());
             this.hubServer.Dispose();
             this.webSubClientServer.Dispose();
+        }
+
+        private SubscriptionRequest CreateNewSubscription(string subscriptionUrl, string topic, string[] events, string callback, int leaseSeconds = 3600)
+        {
+            var rngCsp = new RNGCryptoServiceProvider();
+            var buffer = new byte[32];
+            rngCsp.GetBytes(buffer);
+            var secret = BitConverter.ToString(buffer).Replace("-", "");
+            var subscription = new SubscriptionRequest()
+            {
+                Callback = callback,
+                Events = events,
+                Mode = Common.Model.SubscriptionMode.subscribe,
+                Secret = secret,
+                Lease_Seconds = leaseSeconds,
+                Topic = topic
+            };
+            subscription.HubDetails = new HubDetails() { HubUrl = subscriptionUrl };
+
+            return subscription;
         }
     }
 }

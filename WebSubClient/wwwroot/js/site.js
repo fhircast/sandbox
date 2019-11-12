@@ -52,7 +52,7 @@ connection.on("ReceivedNotification", (notification) => {
     var ctrl, value;
 
     if (eventObj.resourceType === eventResources.PATIENT) {
-        ctrl = this["patientID"];        
+        ctrl = this["patientID"];
     } else if (eventObj.resourceType === eventResources.IMAGINGSTUDY) {
         ctrl = this["accessionNumber"];
     }
@@ -91,6 +91,42 @@ connection.on("SubscriberAdded", (subscription) => {
 
     var subTable = getSubscriptionTable(true).getElementsByTagName('tbody')[0];
     addSubscriptionToTable(subTable, subscription);
+});
+
+connection.on("AddWebSocket", (subscription) => {
+    //popupNotification("New web socket " + subscription.websocketURL);
+
+    // Create WebSocket connection.
+    const socket = new WebSocket(subscription.websocketURL);
+
+    // Connection opened
+    socket.addEventListener('open', function (event) {
+        popupNotification("Websocket opened: " + subscription.websocketURL);
+    });
+
+    // Listen for messages
+    socket.addEventListener('message', function (event) {
+        //console.log('Message from server ', event.data);
+        var obj = JSON.parse(event.data);
+        popupNotification("Received web socket notification " + obj.event["hub.event"]);
+
+        let eventObj = parseNotificationIntoEventObj(obj);
+        var ctrl, value;
+
+        if (eventObj.resourceType === eventResources.PATIENT) {
+            ctrl = this["patientID"];
+        } else if (eventObj.resourceType === eventResources.IMAGINGSTUDY) {
+            ctrl = this["accessionNumber"];
+        }
+
+        if (eventObj.actionType === eventActions.OPEN) {
+            value = notification.event.context[0].idElement.value;  // Just assume the first resource for now.
+        } else if (eventObj.actionType === eventActions.CLOSE) {
+            value = "";
+        }
+
+        ctrl.value = value;
+    });
 });
 
 // Handles receiving a message from the hub to be displayed to the user
@@ -204,6 +240,7 @@ $("#subscribe").submit(function (e) {
             this["subscriptionUrl"].value,
             this["topic"].value,
             events,
+            this["useWebsockets"].checked,
             headers)
         .catch(e => console.error(e));
 

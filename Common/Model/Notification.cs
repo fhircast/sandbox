@@ -1,5 +1,4 @@
-﻿using FHIRcastSandbox.Model;
-using Hl7.Fhir.Model;
+﻿using Hl7.Fhir.Model;
 using Hl7.Fhir.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
@@ -80,7 +79,7 @@ namespace FHIRcastSandbox.Model
             }
 
             return notification;
-        } 
+        }
         #endregion
 
         #region Overrides

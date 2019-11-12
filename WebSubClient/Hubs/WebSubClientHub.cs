@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
@@ -57,7 +58,7 @@ namespace FHIRcastSandbox.Hubs
         /// <param name="events"></param>
         /// <param name="httpHeaders"></param>
         /// <returns></returns>
-        public async Task Subscribe(string subscriptionUrl, string topic, string events, string[] httpHeaders)
+        public async Task Subscribe(string subscriptionUrl, string topic, string events, bool webSocket, string[] httpHeaders)
         {
             if (string.IsNullOrEmpty(subscriptionUrl))
             {
@@ -94,6 +95,11 @@ namespace FHIRcastSandbox.Hubs
                     HubUrl = subscriptionUrl,
                     HttpHeaders = httpHeaders
                 }
+            };
+
+            subscription.Channel = new Channel()
+            {
+                Type = (webSocket) ? SubscriptionChannelType.websocket : SubscriptionChannelType.webhook
             };
 
             if (!await PendAndPostSubscription(clientId, subscription))
@@ -147,12 +153,31 @@ namespace FHIRcastSandbox.Hubs
             {
                 _subscriptions.RemovePendingSubscription(clientId, subscriptionRequest);
             }
-            //else
-            //{
-            //    await SubscriptionsChanged(clientId);
-            //}
+
+            Stream receiveStream = await response.Content.ReadAsStreamAsync();
+            StreamReader readStream = new StreamReader(receiveStream, Encoding.UTF8);
+            string responseBody = readStream.ReadToEnd();
+
+            if (!String.IsNullOrEmpty(responseBody))
+            {
+                subscriptionRequest.WebsocketURL = responseBody;
+                await AddWebSocket(clientId, subscriptionRequest);
+            }
 
             return response.IsSuccessStatusCode;
+        }
+
+        private async Task<HttpResponseMessage> PostSubscriptionAsync(SubscriptionRequest subscription)
+        {
+            HttpClient client = new HttpClient();
+
+            foreach (string header in subscription.HubDetails.HttpHeaders)
+            {
+                string[] split = header.Split(":");
+                client.DefaultRequestHeaders.Add(split[0], split[1]);
+            }
+
+            return await client.PostAsync(subscription.HubDetails.HubUrl, subscription.BuildPostHttpContent());
         }
 
         /// <summary>
@@ -241,6 +266,12 @@ namespace FHIRcastSandbox.Hubs
             List<SubscriptionRequest> subscriptions = _subscriptions.ClientsSubscriptions(clientId);
             logger.LogDebug($"Subscriptions changed for {clientId}. New list: {subscriptions}");
             await webSubClientHubContext.Clients.Client(clientId).SubscriptionsChanged(_subscriptions.ClientsSubscriptions(clientId));
+        }
+
+        public async Task AddWebSocket(string connectionId, SubscriptionRequest subscription)
+        {
+            logger.LogDebug($"Adding web socket for {connectionId}: {subscription.ToString()}");
+            await webSubClientHubContext.Clients.Client(connectionId).AddWebSocket(subscription);
         }
 
         public async Task AlertMessage(string connectionId, string message)

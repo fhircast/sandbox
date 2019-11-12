@@ -23,7 +23,18 @@ namespace FHIRcastSandbox.Rules
         public async Task Run(SubscriptionRequest subscription, bool simulateCancellation)
         {
             HubValidationOutcome validationOutcome = simulateCancellation ? HubValidationOutcome.Canceled : HubValidationOutcome.Valid;
-            var validationResult = await validator.ValidateSubscription(subscription, validationOutcome);
+            ClientValidationOutcome validationResult;
+
+            // Shouldn't have a websocket subscription here, we only need to validate webhook
+            if (subscription.Channel.Type == SubscriptionChannelType.websocket)
+            {
+                validationResult = ClientValidationOutcome.Verified;
+                return;
+            }
+            else
+            {
+                validationResult = await validator.ValidateSubscription(subscription, validationOutcome);
+            }            
 
             if (validationResult == ClientValidationOutcome.Verified)
             {
@@ -31,7 +42,7 @@ namespace FHIRcastSandbox.Rules
                 {
                     // Add subscription to collection and inform client
                     logger.LogInformation($"Adding verified subscription: {subscription}.");
-                    subscriptions.AddSubscription(subscription);
+                    subscriptions.ActivatePendedSubscription(subscription.Callback);
                     await internalHub.NotifyClientOfSubscriber(subscription.Topic, subscription);
                 }
                 else if (subscription.Mode == SubscriptionMode.unsubscribe)

@@ -4,7 +4,12 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Net.WebSockets;
+using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Web;
 
 namespace Common.Model
@@ -71,16 +76,37 @@ namespace Common.Model
     public class SubscriptionRequest : SubscriptionBase
     {
         #region Properties
-        [BindRequired]
+        [BindingBehavior(BindingBehavior.Optional)]
         public string Callback { get; set; }
 
-        [BindRequired]
+        [BindingBehavior(BindingBehavior.Optional)]
         public string Secret { get; set; }
 
-        public SubscriptionChannelType? ChannelType { get; set; }
+        [BindRequired]
+        public Channel Channel { get; set; }
 
         [BindNever]
         public HubDetails HubDetails { get; set; }
+
+        public string WebsocketURL { get; set; }
+        public WebSocket Websocket { get; set; }
+        /// <summary>
+        /// This is the key used to store the subscription in a dictionary (see Hub implementation).
+        /// </summary>
+        public string CollectionKey
+        {
+            get
+            {
+                if (Channel.Type == SubscriptionChannelType.webhook)
+                {
+                    return Callback;
+                }
+                else
+                {
+                    return WebsocketURL;
+                }
+            }
+        }
         #endregion
 
         #region Public Methods
@@ -91,14 +117,104 @@ namespace Common.Model
         /// <returns>StringContent containing the SubscriptionRequest properties to be used in subscription requests</returns>
         public HttpContent BuildPostHttpContent()
         {
-            string content = $"hub.callback={Callback}" +
-                                $"&hub.mode={Mode}" +
-                                $"&hub.topic={Topic}" +
-                                $"&hub.secret={Secret}" +
-                                $"&hub.events={string.Join(",", Events)}" +
-                                $"&hub.lease_seconds={Lease_Seconds}";
+            StringBuilder sb = new StringBuilder();
 
-            return new StringContent(content, Encoding.UTF8, "application/x-www-form-urlencoded");
+            if (Channel.Type == SubscriptionChannelType.websocket)
+            {
+                sb.Append($"hub.channel.type={Channel.Type}");
+            }
+            else
+            {
+                sb.Append($"hub.callback={Callback}");
+            }
+
+            sb.Append($"&hub.mode={Mode}");
+            sb.Append($"&hub.topic={Topic}");
+            sb.Append($"&hub.secret={Secret}");
+            sb.Append($"&hub.events={string.Join(",", Events)}");
+            sb.Append($"&hub.lease_seconds={Lease_Seconds}");
+
+            return new StringContent(sb.ToString(), Encoding.UTF8, "application/x-www-form-urlencoded");
+        } 
+
+        public string GetWebsocketUrl(string hubHost, int? port)
+        {
+            if (Channel.Type != SubscriptionChannelType.websocket)
+            {
+                throw new Exception("Channel type isn't websocket");
+            }
+
+            string guid = Guid.NewGuid().ToString("n");
+
+            Uri uri = new UriBuilder("ws", hubHost, (port == null) ? 0 : port.Value, guid).Uri;
+            WebsocketURL = (port == null) ? uri.GetComponents(UriComponents.AbsoluteUri & ~UriComponents.Port, UriFormat.UriEscaped) : uri.AbsoluteUri;
+            return WebsocketURL;
+        }
+
+        public async Task<bool> SendNotificationAsync(string jsonBody)
+        {           
+            if (Channel.Type == SubscriptionChannelType.webhook)
+            {
+                return await SendWebhookNotificationAsync(jsonBody);
+            }
+            else if (Channel.Type == SubscriptionChannelType.websocket)
+            {
+                return await SendWebsocketNotificationAsync(jsonBody);
+            }
+            return false;
+        }
+        #endregion
+
+        #region Private Methods
+        private async Task<bool> SendWebsocketNotificationAsync(string jsonBody)
+        {
+            try
+            {
+                var buffer = Encoding.UTF8.GetBytes(jsonBody);
+                var segment = new ArraySegment<byte>(buffer);
+                await Websocket.SendAsync(segment, WebSocketMessageType.Text, true, default(CancellationToken));
+                return true;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        private async Task<bool> SendWebhookNotificationAsync(string jsonBody)
+        {
+            HttpContent httpContent = new StringContent(jsonBody);
+
+            // Add the headers
+            httpContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+            httpContent.Headers.Add("X-Hub-Signature", XHubSignature(jsonBody));
+
+            HttpClient client = new HttpClient();
+            var response = await client.PostAsync(this.Callback, httpContent);
+            return response.IsSuccessStatusCode;
+        }
+
+        /// <summary>
+        /// Calculates and returns the X-Hub-Signature header. Currently uses sha256
+        /// </summary>
+        /// <param name="subscription">Subscription to get the secret from</param>
+        /// <param name="body">Body used to calculate the signature</param>
+        /// <returns>The sha256 hash of the body using the subscription's secret</returns>
+        private string XHubSignature(string body)
+        {
+            using (HMACSHA256 sha256 = new HMACSHA256(Encoding.ASCII.GetBytes(this.Secret)))
+            {
+                byte[] bodyBytes = Encoding.UTF8.GetBytes(body);
+
+                byte[] hash = sha256.ComputeHash(bodyBytes);
+                StringBuilder stringBuilder = new StringBuilder(hash.Length * 2);
+                foreach (byte b in hash)
+                {
+                    stringBuilder.AppendFormat("{0:x2}", b);
+                }
+
+                return "sha256=" + stringBuilder.ToString();
+            }
         } 
         #endregion
 
@@ -138,11 +254,13 @@ namespace Common.Model
             hashCode = hashCode * -1521134295 + base.GetHashCode();
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Callback);
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Secret);
-            hashCode = hashCode * -1521134295 + EqualityComparer<SubscriptionChannelType?>.Default.GetHashCode(ChannelType);
+            hashCode = hashCode * -1521134295 + EqualityComparer<SubscriptionChannelType?>.Default.GetHashCode(Channel.Type);
             hashCode = hashCode * -1521134295 + EqualityComparer<HubDetails>.Default.GetHashCode(HubDetails);
             return hashCode;
         }
-        #endregion
+
+
+        #endregion       
     }
 
     /// <summary>
@@ -219,6 +337,13 @@ namespace Common.Model
         }
         #endregion
     }
+
+    public class Channel
+    {
+        public SubscriptionChannelType Type { get; set; }
+        public string Endpoint { get; set; }    //This isn't used yet
+    }
+
     public class HubDetails
     {
         public string HubUrl { get; set; }
@@ -233,6 +358,7 @@ namespace Common.Model
 
     public enum SubscriptionChannelType
     {
+        webhook,
         websocket
     }
 }

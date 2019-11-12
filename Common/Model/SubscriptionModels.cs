@@ -97,14 +97,22 @@ namespace Common.Model
         {
             get
             {
-                if (Channel.Type == SubscriptionChannelType.webhook)
+                try
                 {
-                    return Callback;
+                    if (Channel.Type == SubscriptionChannelType.webhook)
+                    {
+                        return Callback;
+                    }
+                    else
+                    {
+                        return WebsocketURL;
+                    }
                 }
-                else
+                catch (Exception)
                 {
-                    return WebsocketURL;
+                    return "";
                 }
+                
             }
         }
         #endregion

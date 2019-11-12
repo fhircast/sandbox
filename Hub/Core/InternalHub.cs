@@ -25,7 +25,7 @@ namespace FHIRcastSandbox.Core
         /// TODO: Should the topic for the client be assigned by this hub? so when the client first starts up it asks 
         ///       for its topic id which could then be this signalr hub's connectionid meaning we don't need this collection?
         /// </summary>
-        Dictionary<string, string> topicConnectionIdMapping = new Dictionary<string, string>();
+        public Dictionary<string, string> topicConnectionIdMapping = new Dictionary<string, string>();
 
         private readonly ILogger<InternalHub> logger;
 

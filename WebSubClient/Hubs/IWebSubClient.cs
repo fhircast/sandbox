@@ -15,6 +15,7 @@ namespace FHIRcastSandbox.Hubs
         Task SubscriptionsChanged(List<SubscriptionRequest> subscriptions);
         Task SubscriberAdded(SubscriptionRequest subscriber);
         Task SubscriberRemoved(SubscriptionRequest subscriber);
+        Task AddWebSocket(SubscriptionRequest subscription);
 
         Task AlertMessage(string message);
     }

@@ -255,11 +255,12 @@ namespace FHIRcastSandbox
 
         #region HTTP Tests
         [Fact]
-        public async void Post_HubController_FromForm_ValidData_SuccessResponse()
+        public async void Post_HubController_FromForm_ValidData_NotFoundResponse()
         {
             Dictionary<string, string> formData = new Dictionary<string, string>
             {
                 {"hub.callback", "testcallback" },
+                {"hub.channel.type", "webhook" },
                 {"hub.mode", "subscribe" },
                 {"hub.topic", "testtopic" },
                 {"hub.events", "patient-open,patient-close" },
@@ -269,7 +270,7 @@ namespace FHIRcastSandbox
 
             var response = await _hubClient.PostAsync("api/hub", new FormUrlEncodedContent(formData));
 
-            Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
 
         [Fact]

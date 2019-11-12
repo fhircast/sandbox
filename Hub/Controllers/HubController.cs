@@ -7,9 +7,9 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using FHIRcastSandbox.Core;
 
 namespace FHIRcastSandbox.Controllers
 {
@@ -19,16 +19,16 @@ namespace FHIRcastSandbox.Controllers
         private readonly ILogger<HubController> logger;
         private readonly IBackgroundJobClient backgroundJobClient;
         private readonly ISubscriptions subscriptions;
-        private readonly INotifications<HttpResponseMessage> notifications;
         private readonly IContexts contexts;
+        private readonly InternalHub internalHub;
 
-        public HubController(ILogger<HubController> logger, IBackgroundJobClient backgroundJobClient, ISubscriptions subscriptions, INotifications<HttpResponseMessage> notifications, IContexts contexts)
+        public HubController(ILogger<HubController> logger, IBackgroundJobClient backgroundJobClient, ISubscriptions subscriptions, IContexts contexts, InternalHub internalHub)
         {
             this.backgroundJobClient = backgroundJobClient ?? throw new ArgumentNullException(nameof(backgroundJobClient));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.subscriptions = subscriptions ?? throw new ArgumentNullException(nameof(subscriptions));
-            this.notifications = notifications ?? throw new ArgumentNullException(nameof(notifications));
             this.contexts = contexts ?? throw new ArgumentNullException(nameof(contexts));
+            this.internalHub = internalHub;
         }
 
         /// <summary>
@@ -59,9 +59,25 @@ namespace FHIRcastSandbox.Controllers
                 return BadRequest(ModelState);
             }
 
-            backgroundJobClient.Enqueue<ValidateSubscriptionJob>(job => job.Run(hub, _cancel));
+            // Validate subscription here, if invalid then return error
+            if (!internalHub.topicConnectionIdMapping.ContainsKey(hub.Topic))
+            {
+                logger.LogError($"Could not find topic {hub.Topic}. Denying subscription request.");
+                return NotFound($"hub.topic={hub.Topic}");
+            }
 
-            return Accepted();
+            if (hub.Channel.Type == SubscriptionChannelType.websocket)
+            {
+                string webSocketUrl = hub.GetWebsocketUrl(HttpContext.Request.Host.Host, HttpContext.Request.Host.Port);
+                subscriptions.AddPendingSubscription(hub, webSocketUrl);
+                return Accepted((object)webSocketUrl);
+            }
+            else
+            {
+                subscriptions.AddPendingSubscription(hub, hub.Callback);
+                backgroundJobClient.Enqueue<ValidateSubscriptionJob>(job => job.Run(hub, _cancel));
+                return Accepted();
+            }           
         }
 
         /// <summary>
@@ -103,7 +119,7 @@ namespace FHIRcastSandbox.Controllers
             var success = true;
             foreach (var sub in subscriptions)
             {
-                success |= (await notifications.SendNotification(notification, sub)).IsSuccessStatusCode;
+                success |= await sub.SendNotificationAsync(notification.ToJson());
             }
             if (!success)
             {
@@ -137,5 +153,20 @@ namespace FHIRcastSandbox.Controllers
             }
 
         }
+
+        //Future update
+        //[Route("debug")]
+        //public IActionResult GetDebug()
+        //{
+        //    HubDebugModel model = new HubDebugModel();
+        //    model.PendingSubscriptions = (List<SubscriptionRequest>) subscriptions.GetPendingSubscriptions();
+        //    model.ActiveSubscriptions = (List<SubscriptionRequest>)subscriptions.GetActiveSubscriptions();
+        //    model.TopicConnections = new List<string>();
+        //    foreach (KeyValuePair<string, string> keyValuePair in internalHub.topicConnectionIdMapping)
+        //    {
+        //        model.TopicConnections.Add($"Topic: {keyValuePair.Key} - Connection: {keyValuePair.Value}");
+        //    }
+        //    return View("Hub", model);
+        //}
     }
 }

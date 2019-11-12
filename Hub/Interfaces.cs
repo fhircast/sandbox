@@ -1,5 +1,4 @@
 using Common.Model;
-using FHIRcastSandbox.Model;
 using FHIRcastSandbox.Rules;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -11,15 +10,19 @@ namespace FHIRcastSandbox
     }
 
     public interface ISubscriptions {
+        ICollection<SubscriptionRequest> GetPendingSubscriptions();
         ICollection<SubscriptionRequest> GetActiveSubscriptions();
-        void AddSubscription(SubscriptionRequest subscription);
+
         void RemoveSubscription(SubscriptionRequest subscription);
         ICollection<SubscriptionRequest> GetSubscriptions(string topic, string notificationEvent);
+        void AddPendingSubscription(SubscriptionRequest subscription, string key);
+        bool ActivatePendedSubscription(string key, out SubscriptionRequest subscription);
+        bool ActivatePendedSubscription(string key);
+        bool UnsubscribeSubscription(string key);
+
+        
     }
 
-    public interface INotifications<T> {
-        Task<T> SendNotification(Notification notification, SubscriptionRequest subscription);
-    }
     public interface IContexts
     {
         string addContext();

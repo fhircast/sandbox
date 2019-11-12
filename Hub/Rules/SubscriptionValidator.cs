@@ -23,10 +23,12 @@ namespace FHIRcastSandbox.Rules
             }
 
             SubscriptionVerification verification = SubscriptionVerification.CreateSubscriptionVerification(subscription, (outcome == HubValidationOutcome.Canceled));
+
+            HttpResponseMessage response = new HttpResponseMessage();
             Uri verificationUri = verification.VerificationURI();
 
             logger.LogDebug($"Calling callback url: {verificationUri}");
-            var response = await new HttpClient().GetAsync(verificationUri);
+            response = await new HttpClient().GetAsync(verificationUri);
 
             if (outcome == HubValidationOutcome.Canceled)
             {
@@ -34,21 +36,40 @@ namespace FHIRcastSandbox.Rules
             }
             else
             {
-                if (!response.IsSuccessStatusCode)
+                if (await ValidVerificationResponseAsync(verification, response))
                 {
-                    logger.LogInformation($"Status code was not success but instead {response.StatusCode}");
+                    return ClientValidationOutcome.Verified;
+                }
+                else
+                {
                     return ClientValidationOutcome.NotVerified;
                 }
-
-                var responseBody = (await response.Content.ReadAsStringAsync());
-                if (responseBody != verification.Challenge)
-                {
-                    logger.LogInformation($"Callback result for verification request was not equal to challenge. Response body: '{responseBody}', Challenge: '{verification.Challenge}'.");
-                    return ClientValidationOutcome.NotVerified;
-                }
-
-                return ClientValidationOutcome.Verified;
             }
+        }
+
+        /// <summary>
+        /// Validates the subscribing apps response to our verification. Confirms a successful status code
+        /// and the response matches our verification challenge.
+        /// </summary>
+        /// <param name="verification">Verification intent sent to subscriber</param>
+        /// <param name="response">Subscriber's HTTP response message</param>
+        /// <returns>true if valid, else false</returns>
+        private async Task<bool> ValidVerificationResponseAsync(SubscriptionVerification verification, HttpResponseMessage response)
+        {
+            if (!response.IsSuccessStatusCode)
+            {
+                logger.LogInformation($"Status code was not success but instead {response.StatusCode}");
+                return false;
+            }
+
+            var responseBody = (await response.Content.ReadAsStringAsync());
+            if (responseBody != verification.Challenge)
+            {
+                logger.LogInformation($"Callback result for verification request was not equal to challenge. Response body: '{responseBody}', Challenge: '{verification.Challenge}'.");
+                return false;
+            }
+
+            return true;
         }
     }
 

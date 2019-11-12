@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Net.Http;
 using FHIRcastSandbox.Core;
 
 namespace FHIRcastSandbox
@@ -24,16 +23,17 @@ namespace FHIRcastSandbox
             services.AddHangfire(config => config
                 .UseNLogLogProvider()
                 .UseMemoryStorage());
+            
             services.AddSignalR();
             services.AddTransient<ISubscriptionValidator, SubscriptionValidator>();
 
             services.AddSingleton<ISubscriptions, HubSubscriptionCollection>();
-            services.AddSingleton<INotifications<HttpResponseMessage>, Notifications<HttpResponseMessage>>();
             services.AddSingleton<IContexts, Contexts>();
             services.AddSingleton(typeof(InternalHub));
 
             services.AddTransient<IBackgroundJobClient, BackgroundJobClient>();
             services.AddTransient<ValidateSubscriptionJob>();
+            services.AddTransient<WebSocketMiddleware>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -49,6 +49,14 @@ namespace FHIRcastSandbox
             {
                 route.MapHub<InternalHub>("/internalHub");
             });
+
+            var webSocketOptions = new WebSocketOptions()
+            {
+                KeepAliveInterval = TimeSpan.FromSeconds(120),
+                ReceiveBufferSize = 4 * 1024
+            };
+            app.UseWebSockets(webSocketOptions);
+            app.UseMiddleware<WebSocketMiddleware>();
 
             JobActivator.Current = new ServiceProviderJobActivator(app.ApplicationServices);
         }
